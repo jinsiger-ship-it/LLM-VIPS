@@ -1,0 +1,677 @@
+/* Diamond Memories — 화면 스타일
+ * 색상, 크기, 간격, 모바일 배치를 이 파일에서 조정합니다.
+ * Google Fonts 연결이 없으면 기본 sans-serif 글꼴로 표시됩니다.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap');
+
+/* 공통 색상 변수: 전체 분위기를 바꾸려면 이 값을 수정하세요. */
+:root {
+  --ink:#173b30;
+  --green:#1d513e;
+  --paper:#f4f2e9;
+  --line:#d8ddcf;
+  --orange:#e58347;
+}
+
+
+/* 전체 요소의 너비 계산 방식 */
+* {
+  box-sizing:border-box;
+}
+
+
+/* 페이지 기본 글꼴과 바탕 */
+body {
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Noto Sans KR',sans-serif;
+}
+
+button,input,select,textarea {
+  font:inherit;
+}
+
+button {
+  cursor:pointer;
+}
+
+
+/* 상단 로고와 메뉴 */
+header {
+  height:105px;
+  max-width:1360px;
+  margin:auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 48px;
+  border-bottom:1px solid var(--line);
+}
+
+.brand {
+  display:flex;
+  gap:10px;
+  align-items:center;
+  font-size:38px;
+  color:var(--ink);
+  text-decoration:none;
+}
+
+.brand span {
+  font-size:17px;
+  font-weight:900;
+  line-height:1.05;
+  letter-spacing:2px;
+}
+
+.brand small {
+  font-size:12px;
+}
+
+nav {
+  display:flex;
+  gap:25px;
+}
+
+nav button {
+  border:0;
+  background:none;
+  color:#728277;
+  padding:14px 0;
+  font-size:14px;
+}
+
+nav .active {
+  color:var(--ink);
+  border-bottom:2px solid var(--ink);
+  font-weight:700;
+}
+
+.label,.eyebrow {
+  font-size:11px;
+  letter-spacing:2px;
+  font-weight:700;
+}
+
+.label {
+  color:#788274;
+}
+
+
+/* 화면 콘텐츠 영역 */
+main {
+  max-width:1264px;
+  margin:auto;
+  padding:52px 0 70px;
+  min-height:75vh;
+}
+
+
+/* 홈의 소개 문구와 대표 티켓 배치 */
+.hero {
+  display:grid;
+  grid-template-columns:1.05fr 1fr;
+  gap:60px;
+  align-items:center;
+}
+
+.eyebrow {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.dot {
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:var(--orange);
+}
+
+h1 {
+  font-size:60px;
+  letter-spacing:-3px;
+  line-height:1.22;
+  margin:25px 0;
+}
+
+h1 em {
+  font-style:normal;
+  color:#779079;
+}
+
+p {
+  color:#748074;
+  line-height:1.9;
+  font-size:14px;
+}
+
+.actions {
+  display:flex;
+  gap:10px;
+  margin-top:30px;
+}
+
+.btn {
+  background:var(--green);
+  border:1px solid var(--green);
+  color:white;
+  border-radius:5px;
+  padding:14px 23px;
+  font-weight:600;
+  font-size:13px;
+}
+
+.btn.secondary {
+  background:transparent;
+  color:var(--ink);
+  border-color:#bec7b8;
+}
+
+.btn:hover {
+  filter:brightness(1.1);
+}
+
+.hero-art {
+  background:#dce5d6;
+  min-height:440px;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:150px 150px 8px 8px;
+  overflow:hidden;
+}
+
+.diamond {
+  position:absolute;
+  width:300px;
+  height:300px;
+  transform:rotate(45deg);
+  border:1px solid #b2c5ac;
+}
+
+.diamond:after {
+  content:'';
+  position:absolute;
+  inset:35px;
+  border:1px solid #b2c5ac;
+}
+
+.hero-art .ticket {
+  width:310px;
+  transform:rotate(-9deg);
+  box-shadow:18px 25px 0 #16412f20;
+}
+
+.art-label {
+  position:absolute;
+  bottom:20px;
+  right:25px;
+  font-size:10px;
+  letter-spacing:2px;
+}
+
+
+/* 모든 화면에서 재사용하는 티켓 디자인 */
+.ticket {
+  background:#fffdf5;
+  border:1px solid #d9dfd1;
+  border-radius:10px;
+  overflow:hidden;
+  color:#183d2e;
+}
+
+.ticket-top {
+  padding:15px 21px;
+  background:#194d39;
+  color:#fff;
+  font-size:10px;
+  letter-spacing:3px;
+  display:flex;
+  justify-content:space-between;
+}
+
+.ticket-body {
+  padding:25px;
+}
+
+.ticket .stadium {
+  font-size:10px;
+  letter-spacing:1px;
+  color:#7e8a7a;
+}
+
+.ticket h3 {
+  font-size:25px;
+  line-height:1.4;
+  margin:16px 0;
+}
+
+.score {
+  font-size:30px;
+  font-weight:900;
+  margin:12px 0;
+}
+
+.ticket-note {
+  font-size:12px;
+  color:#6d7a69;
+  min-height:23px;
+}
+
+.ticket-bottom {
+  border-top:2px dashed #d7ddcf;
+  padding:17px 25px;
+  font-size:10px;
+  display:flex;
+  justify-content:space-between;
+}
+
+.barcode {
+  height:25px;
+  width:90px;
+  background:repeating-linear-gradient(90deg,#264b37 0 2px,transparent 2px 4px,#264b37 4px 5px,transparent 5px 8px);
+}
+
+.ticket img {
+  width:100%;
+  height:120px;
+  object-fit:cover;
+  margin-top:10px;
+}
+
+
+/* 게임 보상: 금빛 프레임 */
+.ticket.gold {
+  border:4px solid #dba93e;
+}
+
+
+/* 게임 보상: 야간 테마 */
+.ticket.night {
+  background:#213e42;
+  color:#f7f4e8;
+}
+
+.ticket.night .ticket-note,.ticket.night .stadium {
+  color:#c0d0c3;
+}
+
+.section-head {
+  margin:55px 0 23px;
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+}
+
+.section-head h2 {
+  font-size:22px;
+  margin:0;
+}
+
+.section-head span {
+  color:#839080;
+  font-size:12px;
+}
+
+
+/* 홈의 기능 소개 카드 */
+.features {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:20px;
+}
+
+.feature {
+  border:1px solid var(--line);
+  padding:25px;
+  border-radius:6px;
+  background:#f9f8f0;
+}
+
+.feature .num {
+  font-family:serif;
+  font-style:italic;
+  font-size:24px;
+  color:#a0ae92;
+}
+
+.feature h3 {
+  font-size:17px;
+  margin-bottom:7px;
+}
+
+.feature p {
+  font-size:12px;
+  margin:0;
+}
+
+.feature button {
+  border:0;
+  background:none;
+  color:var(--green);
+  padding:18px 0 0;
+  font-weight:700;
+}
+
+.page-title {
+  font-size:36px;
+  letter-spacing:-1px;
+  margin:10px 0;
+}
+
+
+/* 티켓 작성 폼과 미리보기의 두 열 배치 */
+.workspace {
+  display:grid;
+  grid-template-columns:1.2fr 1fr;
+  gap:50px;
+  margin-top:30px;
+}
+
+.panel {
+  background:#faf9f2;
+  border:1px solid var(--line);
+  padding:30px;
+  border-radius:8px;
+}
+
+.form-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:17px;
+}
+
+label {
+  display:block;
+  font-size:12px;
+  font-weight:600;
+}
+
+input,select,textarea {
+  display:block;
+  width:100%;
+  background:#fffef9;
+  border:1px solid #ccd5c6;
+  border-radius:4px;
+  padding:11px;
+  margin-top:8px;
+  color:var(--ink);
+  min-width:0;
+}
+
+textarea {
+  resize:vertical;
+}
+
+.full {
+  grid-column:1/-1;
+}
+
+.preview {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#e2e8d9;
+  border-radius:8px;
+  padding:35px;
+}
+
+.preview .ticket {
+  width:330px;
+}
+
+.muted {
+  font-size:12px;
+  color:#87917e;
+}
+
+
+/* 수집함 카드 목록 */
+.collection {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:25px;
+  margin-top:30px;
+}
+
+.card-actions {
+  display:flex;
+  gap:8px;
+  margin-top:12px;
+}
+
+.card-actions button {
+  flex:1;
+  padding:10px;
+}
+
+.empty {
+  text-align:center;
+  padding:70px 10px;
+}
+
+
+/* 선택형 게임 화면 */
+.game {
+  max-width:780px;
+  margin:30px auto;
+}
+
+.scoreboard {
+  background:#153e2d;
+  color:#e9e9ce;
+  padding:24px;
+  display:flex;
+  justify-content:space-between;
+  letter-spacing:2px;
+  border-radius:7px 7px 0 0;
+}
+
+.game .panel {
+  border-radius:0 0 7px 7px;
+}
+
+.game h2 {
+  font-size:26px;
+}
+
+.choice {
+  display:block;
+  width:100%;
+  text-align:left;
+  margin-top:12px;
+  border:1px solid #ccd5c6;
+  background:#fffef7;
+  padding:18px;
+  border-radius:5px;
+  color:var(--ink);
+}
+
+.choice:hover {
+  border-color:var(--green);
+  background:#e8eedf;
+}
+
+.progress {
+  display:flex;
+  gap:7px;
+  margin-bottom:25px;
+}
+
+.progress i {
+  height:4px;
+  flex:1;
+  background:#d7dfce;
+}
+
+.progress i.on {
+  background:var(--orange);
+}
+
+.rewards {
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:22px 0;
+}
+
+.badge {
+  background:#e5ebd9;
+  border-radius:30px;
+  padding:9px 14px;
+  font-size:12px;
+}
+
+.custom {
+  margin-top:20px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.custom button {
+  background:#fffdf5;
+  border:1px solid #bfccb5;
+  padding:10px;
+  border-radius:4px;
+}
+
+.custom button:disabled {
+  opacity:.4;
+  cursor:not-allowed;
+}
+
+.custom button.selected {
+  border:2px solid var(--green);
+}
+
+
+/* 페이지 하단 안내 */
+footer {
+  max-width:1264px;
+  margin:auto;
+  border-top:1px solid var(--line);
+  padding:25px 0;
+  display:flex;
+  justify-content:space-between;
+  font-size:11px;
+  color:#8b9484;
+}
+
+footer b {
+  color:var(--ink);
+  letter-spacing:1px;
+}
+
+
+/* 잠시 표시하는 저장/오류 알림 */
+#toast {
+  position:fixed;
+  bottom:25px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#173b30;
+  color:white;
+  padding:14px 25px;
+  border-radius:5px;
+  display:none;
+  font-size:13px;
+}
+
+
+/* 중간 화면: 좌우 여백 조정 */
+@media(max-width:1350px) {
+  main,footer {
+    margin:0 40px;
+  }
+
+}
+
+
+/* 모바일: 두 열을 한 열로 바꾸고 글자와 여백 조정 */
+@media(max-width:800px) {
+
+  /* 상단 로고와 메뉴 */
+  header {
+    height:auto;
+    padding:22px;
+    flex-wrap:wrap;
+    gap:20px;
+  }
+
+  header .label {
+    display:none;
+  }
+
+  nav {
+    gap:17px;
+    width:100%;
+    justify-content:space-between;
+  }
+
+  nav button {
+    font-size:12px;
+  }
+
+
+  /* 화면 콘텐츠 영역 */
+  main {
+    padding-top:30px;
+    margin:0 20px;
+  }
+
+  .hero,.workspace {
+    grid-template-columns:1fr;
+    gap:30px;
+  }
+
+  h1 {
+    font-size:44px;
+  }
+
+  .hero-art {
+    min-height:380px;
+  }
+
+  .features,.collection {
+    grid-template-columns:1fr;
+  }
+
+  .section-head span {
+    display:none;
+  }
+
+
+  /* 페이지 하단 안내 */
+  footer {
+    margin:0 20px;
+    gap:15px;
+    flex-wrap:wrap;
+  }
+
+  .panel {
+    padding:22px;
+  }
+
+  .form-grid {
+    gap:12px;
+  }
+
+  .preview {
+    padding:25px;
+  }
+
+  .scoreboard {
+    font-size:11px;
+  }
+
+  .page-title {
+    font-size:30px;
+  }
+
+}
+
