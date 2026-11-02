@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <!-- 한국어와 모바일 화면을 위한 설정 -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Diamond Memories · 야구의 순간</title>
+    <!-- 같은 폴더의 디자인 파일 연결 -->
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- 모든 화면에 공통으로 표시되는 로고와 메뉴 -->
+    <header>
+      <a class="brand" href="#">◇ <span>DIAMOND<br /><small>MEMORIES</small></span></a>
+      <nav>
+        <!-- app.js가 data-view 값에 해당하는 화면을 표시합니다. -->
+        <button data-view="home" class="active">홈</button>
+        <button data-view="create">티켓 만들기</button>
+        <button data-view="collection">나의 수집함</button>
+        <button data-view="game">더그아웃 게임</button>
+      </nav>
+      <span class="label">FIRST SEASON / PROTOTYPE</span>
+    </header>
+
+    <!-- JavaScript가 홈, 티켓 작성, 수집함, 게임 내용을 이 영역에 넣습니다. -->
+    <main id="app"></main>
+
+    <!-- 공통 하단 안내 -->
+    <footer>
+      <b>◇ DIAMOND MEMORIES</b>
+      <span>승패 너머, 간직하고 싶은 순간.</span>
+      <small>개인 기념용 티켓 · 공식 입장권이 아닙니다</small>
+    </footer>
+
+    <!-- 저장 완료 및 오류 메시지. 평소에는 CSS로 숨깁니다. -->
+    <div id="toast" role="status"></div>
+    <!-- HTML 요소를 먼저 만든 뒤 동작 코드를 실행합니다. -->
+    <script src="app.js"></script>
+  </body>
+</html>
