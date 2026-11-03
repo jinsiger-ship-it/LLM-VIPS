@@ -1,4 +1,4 @@
-name: Deploy VIPS prototype to GitHub Pages
+name: Deploy FANPLAY prototype to GitHub Pages
 on:
   push:
     branches: [main]
