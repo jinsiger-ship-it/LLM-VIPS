@@ -24,7 +24,7 @@ jobs:
           const parts = Array.from({length:7}, (_,i) =>
             fs.readFileSync('.github/fanplay-source/part'+(i+1)+'.txt','utf8').trim()
           ).join('');
-          const source = zlib.brotliDecompressSync(Buffer.from(parts,'base64')).toString('utf8');
+          const source = require('child_process').execFileSync('bzip2',['-dc'],{input:Buffer.from(parts,'base64'),maxBuffer:1048576}).toString('utf8');
           const digest = crypto.createHash('sha256').update(source).digest('hex');
           const expected = '0bd40a795b0384f349385dd0c091d1860c84ac13b511474e2c86b032e52f3f3f';
           if (digest !== expected) throw new Error('Original-source hash mismatch: '+digest);
