@@ -1,21 +1,24 @@
-# LLM-VIPS — 야구 팬 추억 티켓 & 선택형 게임
+# FANPLAY · KBO 응원팀 테마 프로토타입 v1.1
 
-**[⚾ 프로토타입 화면 열기 (GitHub Pages)](https://jinsiger-ship-it.github.io/LLM-VIPS/)**
+[⚾ FANPLAY 프로토타입 바로 실행하기](https://jinsiger-ship-it.github.io/LLM-VIPS/)
 
-모바일 화면에 맞춘 프로토타입입니다. 티켓 꾸미기, 선택형 게임, 커뮤니티 시연, KBO 응원 팀별 테마가 포함되어 있습니다.
-
-> 최초 배포 시 저장소 관리자 계정에서 **Settings → Pages → Build and deployment → Source: GitHub Actions**로 설정해야 위 링크가 활성화됩니다. 활성화 후 Actions의 `Deploy VIPS prototype to GitHub Pages` 워크플로가 배포합니다.
+사용자가 제공한 `fanplay_prototype_v1.1_kbo_theme (1).html`을 **디자인 및 기능 수정 없이** HTML, CSS, JavaScript로 분리한 버전입니다.
 
 ## 파일 구성
 
-- `index.html` : GitHub Pages 기본 진입 화면
-- `inex.html` : 최종 프로토타입 HTML (요청한 기존 파일명 유지)
-- `css/style.css` : 스타일
-- `jss/app.js` : 화면 이동과 동작
-- `pages/wireframe/10week_wireframe` : 10주차 제출용 버전
+- `index.html` — GitHub Pages 기본 실행 화면
+- `inex.html` — 요청한 최종 작업본 파일 (기존 파일명 유지)
+- `css/style.css` — 원본의 CSS
+- `jss/app.js` — 원본의 JavaScript
+- `pages/wireframe/10week_wireframe` — 10주차 작업본 (기존 파일명 유지)
+- `pages/wireframe/10week_wireframe.html` — 브라우저로 열 수 있는 10주차 HTML 버전
 
-## 실행 방법
+## 주요 시연 기능
 
-배포 후 [프로토타입 주소](https://jinsiger-ship-it.github.io/LLM-VIPS/)를 열면 실제 화면을 사용할 수 있습니다. GitHub Pages 배포 전에는 저장소를 내려받아 `index.html`을 브라우저에서 열어 확인할 수 있습니다.
+직관/중계 관람 기록, 티켓 꾸미기(클래식·전광판·포토), 티켓 수집함, 커뮤니티 시연, 8시즌 선택형 커리어 게임, KBO 10개 구단 테마.
 
-**시연 범위:** 실제 회원가입, 서버 공유, 공식 예매 기능은 없는 로컬 프로토타입이며, 티켓과 보상은 해당 브라우저의 로컬 저장소에만 저장됩니다.
+이 프로토타입은 `localStorage` 기반입니다. 실제 예매, 서버 회원 계정, 다른 사용자와 연결되는 커뮤니티는 포함되지 않습니다.
+
+## 배포
+
+`main`에 커밋하면 GitHub Actions가 GitHub Pages를 배포하도록 구성되어 있습니다.
