@@ -6,6 +6,10 @@
 
 ## 실행
 
+[⚾ 모바일 FANPLAY 바로 실행](https://jinsiger-ship-it.github.io/LLM-VIPS/snapshots/2026-11-10-fanplay-mobile/index.html)
+
+휴대전화나 PC 브라우저에서 링크를 누르면 2026-11-10 스냅샷이 열립니다.
+
 VS Code에서 이 폴더를 열고 `index.html`을 브라우저로 여세요. 또는 Live Server로 실행하세요. Python이 있다면 이 폴더에서 `python -m http.server 8000` 실행 후 `http://localhost:8000`에 접속할 수 있습니다. Node/npm 설치나 API 키는 앱 실행에 필요하지 않습니다. 정적 서버 방식이 권장됩니다.
 
 ## 구현
