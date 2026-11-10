@@ -1,7 +1,12 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const index=fs.readFileSync(__dirname+'/../index.html','utf8');
+const nav=index.match(/<nav\b[^>]*class="bottomnav"[^>]*>([\s\S]*?)<\/nav>/)?.[1];
+assert.ok(nav,'mobile bottom navigation');
+assert.deepEqual([...nav.matchAll(/href="#([^"]+)"/g)].map(link=>link[1]),['community','collection','home','game','profile']);
 const el={innerHTML:'',style:{setProperty(){}},addEventListener(){},classList:{add(){},remove(){}}};
 const ctx=vm.createContext({console,document:{querySelector:()=>el,querySelectorAll:()=>[],documentElement:el},localStorage:{getItem:()=>null,setItem(){}},location:{hash:'#home'},window:{addEventListener(){},scrollTo(){}},setTimeout:()=>1,clearTimeout(){},confirm:()=>false,prompt:()=>null});
-for(const f of ['game-data','storage','game','tickets','account','app'])vm.runInContext(fs.readFileSync(__dirname+'/../js/'+f+'.js','utf8'),ctx);
+for(const f of ['game-data','storage','game','tickets','match-results','account','app'])vm.runInContext(fs.readFileSync(__dirname+'/../js/'+f+'.js','utf8'),ctx);
+assert.match(el.innerHTML,/그날의 야구,<br>나만의 티켓으로/);
 for(const route of ['home','create','collection','game','community','profile']){ctx.location.hash='#'+route;vm.runInContext('render()',ctx);assert(el.innerHTML.length>300);console.log('PASS empty screen '+route);}
 ctx.FP.data.tickets.push(ctx.FP.copy(ctx.FP.sample));ctx.FP.data.posts.push({id:'p',nickname:'팬',text:'시연',ticket:ctx.FP.copy(ctx.FP.sample),comments:[],liked:false});ctx.FP.data.profile.featuredTicketId='sample';
 ctx.FP.startCareer('선수','투수');ctx.FP.choose(1);

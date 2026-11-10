@@ -22,7 +22,7 @@ const staticFiles = new Map([
   ['/css/legacy-v1.1/style.css', ['css/legacy-v1.1/style.css', 'text/css']],
   ['/js/legacy-v1.1/app.js', ['js/legacy-v1.1/app.js', 'text/javascript']],
   ...['style', 'mobile'].map(name => [`/css/${name}.css`, [`css/${name}.css`, 'text/css']]),
-  ...['game-data', 'storage', 'game', 'tickets', 'account', 'app']
+  ...['game-data', 'storage', 'game', 'tickets', 'match-results', 'account', 'app']
     .map(name => [`/js/${name}.js`, [`js/${name}.js`, 'text/javascript']])
 ]);
 
