@@ -1,0 +1,16 @@
+# Match the public-file selection in the custom Pages workflow.
+exclude:
+  - README.md
+  - database
+  - server.cjs
+  - tests
+  - docs
+  - data
+  - snapshots/docs
+  - snapshots/2026-11-02-diamond-memories
+  - snapshots/2026-11-06-fanplay/README.md
+  - snapshots/2026-11-06-fanplay/docs
+  - snapshots/2026-11-06-fanplay/tests
+  - snapshots/2026-11-10-fanplay-mobile/README.md
+  - snapshots/2026-11-10-fanplay-mobile/docs
+  - snapshots/2026-11-10-fanplay-mobile/tests
