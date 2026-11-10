@@ -1,6 +1,6 @@
 # FANPLAY
 
-[모바일 사이트 열기](https://jinsiger-ship-it.github.io/LLM-VIPS/)
+**[FANPLAY 모바일 바로가기](https://jinsiger-ship-it.github.io/LLM-VIPS/)**
 
 야구 관람 티켓을 만들고 수집하며 선수 커리어 게임을 즐기는 모바일 웹앱입니다. GitHub Pages에서 만든 기록은 브라우저에 저장됩니다.
 
