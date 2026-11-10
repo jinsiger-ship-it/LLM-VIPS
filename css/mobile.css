@@ -1,0 +1,133 @@
+/* 모든 화면에서 사용하는 모바일 스타일 */
+html{scroll-padding-bottom:110px}
+
+ body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+
+ header{padding:18px max(18px,env(safe-area-inset-left,0px)) 16px}
+
+ header .brand{display:inline-block;font-size:25px}
+
+ nav{position:fixed;bottom:0;left:0;right:0;z-index:50;margin:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;overflow:visible;background:#fffdf8;border-top:1px solid var(--line);padding:6px env(safe-area-inset-right,0px) calc(6px + env(safe-area-inset-bottom,0px)) env(safe-area-inset-left,0px);box-shadow:0 -4px 20px #20392e09}
+
+ nav a{min-width:0;min-height:56px;padding:6px 0;border:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;letter-spacing:-.4px;color:#70786b;white-space:nowrap;border-radius:8px}
+
+ nav a.active{background:#eaf0de;border:0;color:var(--accent)}
+
+ .nav-icon{display:block;font-size:22px;line-height:1.1;font-weight:500}
+
+ main{padding:26px max(18px,env(safe-area-inset-left,0px)) 38px;min-height:70svh}
+
+ main>*{min-width:0}
+h1{font-size:30px;overflow-wrap:anywhere}
+.hero h1{font-size:clamp(38px,10.5vw,48px);letter-spacing:-2.5px}
+.intro{font-size:14px}
+
+ .btn{min-height:46px;padding:12px 16px;font-size:14px}
+.text-link{display:inline-flex;align-items:center;min-height:44px}
+.actions{gap:10px}
+.hero .actions>.btn{flex:1}
+.hero .actions>.text-link{justify-content:center;flex:1;white-space:nowrap;font-size:12px}
+
+ input:not([type=radio]):not([type=checkbox]),textarea,select{font-size:16px;min-height:48px}
+input[type=file]{font-size:12px!important;max-width:100%}
+input[type=radio],input[type=checkbox]{width:20px;height:20px;vertical-align:middle;flex-shrink:0}
+label{font-size:13px}
+textarea{min-height:105px}
+
+ .fields{gap:0 12px}
+.panel{padding:20px}
+.steps{position:sticky;top:0;z-index:10;background:var(--paper);gap:0;justify-content:space-between;margin:20px 0}
+.steps span{font-size:11px;padding:12px 0}
+.editor-grid{gap:22px}
+.preview{order:0;padding:18px}
+.preview>.eyebrow:after{content:' · 입력한 내용이 여기에 반영됩니다';font-size:9px;letter-spacing:0;font-weight:400}
+.editor-grid form .actions{display:grid;grid-template-columns:1fr 1fr}
+.editor-grid form>.btn{width:100%;margin-top:10px}
+.reward-option{min-height:58px;padding:12px}
+.reward-option small{line-height:1.6}
+
+ .hero-ticket{padding:24px 18px}
+.hero-ticket .ticket{transform:rotate(-2deg)}
+.mini-stats{gap:0;justify-content:space-between;padding-right:20px}
+.section-title{flex-wrap:wrap}
+.collection-grid{gap:28px}
+.card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.card-actions .btn{min-height:44px;font-size:13px;padding:10px 8px}
+.toolbar{gap:14px}
+.tabs{width:100%;display:grid;grid-template-columns:repeat(3,1fr)}
+.tabs .btn{font-size:13px;min-height:44px}
+.toolbar>a{width:100%}
+
+ .game-grid{gap:18px}
+.game-grid aside h2{margin:8px 0}
+.game-grid .stat{margin:12px 0}
+.scene{padding:22px 18px}
+.choices button{min-height:74px;padding:16px 12px;gap:12px;font-size:14px}
+.choices button small{font-size:11px;line-height:1.6}
+.reward-banner{overflow-wrap:anywhere}
+.history summary{min-height:44px;line-height:44px}
+.history p{overflow-wrap:anywhere}
+.inventory-grid{gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%, 145px),1fr))}
+.inventory-grid .panel{padding:14px}
+.inventory-grid h3{font-size:14px;overflow-wrap:anywhere}
+.inventory-grid p{font-size:11px}
+.profile-grid .section-title>.badge{display:inline-block;font-size:10px}
+.post .section-title .btn{min-height:44px;font-size:12px}
+.post>p{overflow-wrap:anywhere}
+.comment-form{align-items:stretch}
+.comment-form input{min-width:0}
+.comment-form .btn{min-width:58px;font-size:13px}
+.comments p{font-size:13px}
+
+ .match{gap:6px;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
+.match strong{font-size:34px}
+.match b{font-size:13px}
+.ticket-top{font-size:9px;padding:12px 14px}
+.ticket-content{padding:16px 14px 10px}
+.ticket-content p{font-size:12px}
+.ticket-stub{padding:12px 14px;grid-template-columns:minmax(0,1fr) 75px}
+.ticket-stub>span{font-size:9px}
+.ticket-photo{height:165px}
+.ticket.photo .ticket-photo{height:210px}
+
+ footer{padding:22px 18px;line-height:1.7}
+#toast{bottom:calc(87px + env(safe-area-inset-bottom,0px));width:max-content;max-width:min(calc(100% - 28px), 452px);padding:13px 17px;font-size:13px;overflow-wrap:anywhere}
+
+
+/* 모바일 UI를 기본으로 사용하고 넓은 화면에서는 휴대전화 폭으로 가운데 정렬합니다. */
+:root {
+  --app-width: 480px;
+  background: #e8ebdf;
+}
+
+body {
+  width: 100%;
+  max-width: var(--app-width);
+  min-height: 100svh;
+  margin-inline: auto;
+}
+
+nav {
+  width: 100%;
+  max-width: var(--app-width);
+  margin-inline: auto;
+}
+
+main, header {
+  padding-left: max(clamp(14px, 4.5vw, 18px), env(safe-area-inset-left, 0px));
+  padding-right: max(clamp(14px, 4.5vw, 18px), env(safe-area-inset-right, 0px));
+}
+
+.steps span { font-size: clamp(10px, 2.8vw, 11px); }
+.match strong { font-size: clamp(29px, 9vw, 34px); }
+.ticket-stub { grid-template-columns: minmax(0, 1fr) clamp(60px, 19vw, 75px); }
+nav a { font-size: clamp(9px, 2.7vw, 10px); }
+.hero .actions { align-items: stretch; }
+.hero .actions > .btn { flex: 1 1 160px; }
+.hero .actions > .text-link { flex: 1 1 120px; }
+
+.account-panel { margin-bottom: 22px; }
+.account-panel details { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 10px; }
+.account-panel summary { cursor: pointer; min-height: 44px; display: list-item; padding-block: 10px; font-weight: 700; }
+.account-panel details p { overflow-wrap: anywhere; }
+.account-panel form { margin-block: 12px; }
