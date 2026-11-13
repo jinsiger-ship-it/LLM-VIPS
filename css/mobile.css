@@ -321,6 +321,37 @@ input:not([type=radio]):not([type=checkbox]), textarea, select { border-radius: 
 .game-cover h2 { margin: 0; line-height: 1.35; }
 .game-grid aside { background: #eef3f4; }
 .choices button { background: white; border-radius: 13px; }
+
+.career-prospects { display: grid; gap: 10px; padding: 0; border: 0; }
+.career-prospects legend { margin-bottom: 8px; font-weight: 700; }
+.career-prospects label { display: flex; flex-direction: row; align-items: flex-start; gap: 10px; margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: 12px; }
+.career-prospects label:has(input:checked) { border-color: var(--accent); background: #eef3f4; }
+.career-prospects label small { display: block; margin-top: 4px; }
+.career-archive { margin-top: 14px; }
+.career-archive summary { cursor: pointer; padding-block: 8px; }
+.career-archive article { padding-block: 12px; border-top: 1px solid var(--line); }
+.auto-career .career-news { padding: 12px; background: #eef3f4; border-radius: 10px; }
+.auto-career .result { margin-top: 16px; }
+
+.career-broadcast { margin: 14px 0; padding: 14px; border-radius: 15px; color: #f5fafb; background: #172d37; }
+.broadcast-visual { aspect-ratio: 16 / 9; margin-bottom: 12px; overflow: hidden; border-radius: 9px; background: #263f45; }
+.broadcast-visual img, .broadcast-visual video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.broadcast-visual [hidden] { display: none; }
+.broadcast-header, .broadcast-count { display: flex; align-items: center; gap: 10px; }
+.broadcast-header { justify-content: space-between; color: #c2d9dc; font-size: 12px; }
+.broadcast-header i { display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 50%; background: #bce579; }
+.broadcast-count { flex-wrap: wrap; margin-top: 12px; font-size: 12px; }
+.broadcast-count span { padding: 3px 8px; border: 1px solid #4c676f; border-radius: 7px; }
+.broadcast-count span b { font-size: 16px; }
+.broadcast-call { margin-left: auto; color: #d4ecf0; }
+.broadcast-call.good { color: #c8ef89; }
+.broadcast-call.bad { color: #ffc6ad; }
+.broadcast-line { min-height: 2.8em; margin: 12px 0 6px; color: inherit; line-height: 1.4; }
+.broadcast-trail { display: flex; flex-wrap: wrap; gap: 5px; min-height: 22px; }
+.broadcast-trail span { padding: 2px 6px; border-radius: 5px; background: #304c56; font-size: 10px; }
+@media (prefers-reduced-motion: no-preference) {
+  .broadcast-line { animation: appear .2s ease-out; }
+}
 .profile-card { display: grid; justify-items: center; gap: 7px; text-align: center; }
 .profile-card > strong { font-size: 21px; overflow-wrap: anywhere; }
 .profile-card > small { color: #d7e2e4; }

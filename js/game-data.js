@@ -2,7 +2,7 @@
 globalThis.FP = {};
 FP.teams = [['neutral','나의 야구','#183d32'],['LG','LG 트윈스','#a50034'],['KT','KT 위즈','#222222'],['SSG','SSG 랜더스','#b51b2b'],['NC','NC 다이노스','#254b79'],['두산','두산 베어스','#192b4f'],['KIA','KIA 타이거즈','#b92936'],['롯데','롯데 자이언츠','#155879'],['삼성','삼성 라이온즈','#1458a8'],['한화','한화 이글스','#bb4c16'],['키움','키움 히어로즈','#76233c']];
 FP.items = [
- {id:'rookie',name:'첫 완주 별',type:'sticker',icon:'✦',condition:'커리어 8시즌 완주'},
+ {id:'rookie',name:'첫 완주 별',type:'sticker',icon:'✦',condition:'커리어 완주'},
  {id:'steady',name:'포레스트 프레임',type:'frame',condition:'꾸준함의 선수 결말 (종합 65 미만)'},
  {id:'star',name:'올스타 프레임',type:'frame',condition:'구단의 간판 결말 (종합 65~79)'},
  {id:'legend',name:'레전드 트로피',type:'sticker',icon:'🏆',condition:'명예의 전당 결말 (종합 80 이상)'}
@@ -19,4 +19,3 @@ FP.scenes = [
  {title:'나의 마지막 시즌',pitcher:'마지막 홈 등판, 관중이 당신의 이름을 외칩니다.',batter:'마지막 홈경기, 익숙한 응원가가 울립니다.',choices:['오래 달려온 나를 응원한다','동료와 완성도를 높인다','모든 힘을 다해 승부한다']}
 ];
 FP.effects = [[1,1,0],[3,3,3],[6,5,6]];
-

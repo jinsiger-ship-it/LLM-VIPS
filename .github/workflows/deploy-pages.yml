@@ -26,7 +26,7 @@ jobs:
           site="$RUNNER_TEMP/fanplay-pages"
           mkdir -p "$site/snapshots"
           cp index.html "$site/"
-          cp -R pages css js "$site/"
+          cp -R pages css js assets "$site/"
           for version in 2026-11-06-fanplay 2026-11-10-fanplay-mobile; do
             mkdir -p "$site/snapshots/$version"
             cp -R "snapshots/$version/index.html" "snapshots/$version/css" "snapshots/$version/js" "$site/snapshots/$version/"

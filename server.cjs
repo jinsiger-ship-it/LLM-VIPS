@@ -1,7 +1,7 @@
 const http = require('node:http');
 const https = require('node:https');
 const { createHash, randomBytes, scrypt, timingSafeEqual } = require('node:crypto');
-const { createReadStream, mkdirSync, readFileSync } = require('node:fs');
+const { createReadStream, mkdirSync, readFileSync, statSync } = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const { promisify } = require('node:util');
@@ -23,8 +23,36 @@ const staticFiles = new Map([
   ['/js/legacy-v1.1/app.js', ['js/legacy-v1.1/app.js', 'text/javascript']],
   ...['style', 'mobile'].map(name => [`/css/${name}.css`, [`css/${name}.css`, 'text/css']]),
   ...['game-data', 'storage', 'game', 'tickets', 'match-results', 'account', 'app']
-    .map(name => [`/js/${name}.js`, [`js/${name}.js`, 'text/javascript']])
+    .map(name => [`/js/${name}.js`, [`js/${name}.js`, 'text/javascript']]),
+  ...['bat-hit','bat-miss','pitch-strikeout'].map(name => [`/assets/broadcast/${name}.mp4`, [`assets/broadcast/${name}.mp4`, 'video/mp4']]),
+  ...['bat-ready','pitch-ready','hit','flyout','strikeout','home-run'].map(name => [`/assets/broadcast/${name}.webp`, [`assets/broadcast/${name}.webp`, 'image/webp']])
 ]);
+
+function serveVideo(request, response, filename) {
+  const length = statSync(filename).size;
+  const headers = {'Content-Type':'video/mp4','Accept-Ranges':'bytes','Cache-Control':'no-cache'};
+  let start = 0;
+  let end = length-1;
+  if (request.headers.range) {
+    const match = /^bytes=(\d*)-(\d*)$/.exec(request.headers.range);
+    if (match?.[1]) {
+      start = Number(match[1]);
+      if (match[2]) end = Math.min(end,Number(match[2]));
+    } else if (match?.[2]) start = Math.max(0,length-Number(match[2]));
+    else start = length;
+    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start>end) {
+      response.writeHead(416,{...headers,'Content-Range':`bytes */${length}`});
+      return response.end();
+    }
+    headers['Content-Range'] = `bytes ${start}-${end}/${length}`;
+  }
+  headers['Content-Length'] = end-start+1;
+  response.writeHead(request.headers.range ? 206 : 200,headers);
+  if (request.method==='HEAD') return response.end();
+  const stream = createReadStream(filename,{start,end});
+  response.on('close',()=>stream.destroy());
+  stream.on('error',()=>response.destroy()).pipe(response);
+}
 
 function model() {
   const context = vm.createContext({});
@@ -72,8 +100,7 @@ function passwordHash(password, salt) {
 }
 
 function createServer({ databasePath, tls, publicOrigin } = {}) {
-  const index = readFileSync(path.join(__dirname, 'index.html'), 'utf8')
-    .replace('<script src="js/account.js">', '<script src="js/account.js" data-account-server>');
+  const index = readFileSync(path.join(__dirname, 'index.html'), 'utf8').replace('<script src="js/account.js?v=20261113-game">', '<script src="js/account.js?v=20261113-game" data-account-server>');
   const filename = databasePath ?? path.join(__dirname, 'database', 'fanplay.sqlite');
   if (filename !== ':memory:') mkdirSync(path.dirname(filename), { recursive: true });
   const db = new DatabaseSync(filename);
@@ -254,7 +281,9 @@ function createServer({ databasePath, tls, publicOrigin } = {}) {
       if (route.startsWith('/api/')) return await handleApi(request, response, route);
       const file = staticFiles.get(route);
       if (!file || !['GET', 'HEAD'].includes(request.method)) throw problem(404, '경로를 찾을 수 없습니다.');
-      response.writeHead(200, { 'Content-Type': file[1] + '; charset=utf-8', 'Cache-Control': 'no-cache' });
+      if (file[1]==='video/mp4') return serveVideo(request,response,path.join(__dirname,file[0]));
+      const type = file[1].startsWith('text/') ? file[1] + '; charset=utf-8' : file[1];
+      response.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-cache' });
       if (request.method === 'HEAD') return response.end();
       if (file[0] === 'index.html') return response.end(index);
       createReadStream(path.join(__dirname, file[0])).on('error', () => response.destroy()).pipe(response);
