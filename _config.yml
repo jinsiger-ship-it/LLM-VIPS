@@ -1,5 +1,6 @@
 # Match the public-file selection in the custom Pages workflow.
 exclude:
+  - supabase
   - README.md
   - database
   - server.cjs

@@ -495,7 +495,7 @@ async function submitAccount(form) {
     formStage = 1;
     filter = '전체';
     render();
-    FP.toast(action === 'delete' ? '계정과 기록을 삭제했습니다.'
+    FP.toast(FP.cloudMode ? (result.username?'온라인 시연 기록을 불러왔어요.':'아이디 사용을 종료했어요.') : action === 'delete' ? '계정과 기록을 삭제했습니다.'
       : result.username ? '로그인했습니다.' : '로그아웃했습니다.');
   } catch (error) {
     FP.toast(error.status ? error.message : '계정 서버에 연결하지 못했습니다.');
@@ -531,6 +531,16 @@ if(a==='career-season') {
 }
 if(a==='career-title') { const [id,title]=v.split(':'); if(await FP.selectCareerTitle(id,title)){render();FP.toast('호칭을 기록과 프로필에 전시했어요.');} }
 if(a==='guest-import'){if(await FP.importGuestRecords(v)){render();FP.toast('기기 기록을 계정에 가져왔어요.');}else render();}
+if(a==='cloud-download')FP.downloadDemoState?.();
+if(a==='cloud-retry'&&FP.cloudMode){await FP.restoreAccount();render();}
+if(a==='cloud-refresh'&&FP.cloudMode&&FP.account.username){
+ if(confirm('현재 온라인 기록을 다시 불러올까요? 아직 저장하지 못한 변경은 먼저 현재 기록 내려받기로 보관해 주세요.')){
+  FP.account.busy=true;
+  try{const result=await FP.accountRequest('login','POST',{username:FP.account.username});FP.useAccount(result);draft=null;appliedMatch=null;formStage=1;FP.accountSaveStatus='온라인 기록을 다시 불러왔어요.';render();FP.toast('최신 기록을 불러왔어요.');}
+  catch(error){FP.toast(error.message);}
+  finally{FP.account.busy=false;scheduleCareer();}
+ }
+}
 if(a==='guest-dismiss'){FP.dismissGuestImport();render();}
 if(a==='guest-review'){FP.reopenGuestImport();render();if(!FP.guestImportCandidate())FP.toast('가져올 기기 기록이 없어요.');}
 if(a==='reward-decorate')FP.openDecorationEditor();
