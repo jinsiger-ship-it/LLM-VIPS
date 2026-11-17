@@ -19,6 +19,17 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify careers and saved data
+        run: |
+          node tests/integration.cjs
+          node tests/screens.cjs
+          node tests/story.cjs
+          node tests/merged-career.cjs
+          node tests/accounts.cjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Prepare public files

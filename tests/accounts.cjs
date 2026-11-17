@@ -35,7 +35,7 @@ async function verify() {
     await start();
     const home = await fetch(base + '/');
     assert.equal(home.status, 200);
-    assert.match(await home.text(), /js\/account\.js" data-account-server/);
+    assert.match(await home.text(), /js\/account\.js(?:\?v=[^"]+)?" data-account-server/);
     await request('/database/fanplay.sqlite', { status: 404 });
     await request('/api/register', { method: 'POST', body: { ...primary, acceptedTerms: false }, status: 400 });
     await request('/api/register', { method: 'POST', origin: 'https://other.example', body: primary, status: 403 });

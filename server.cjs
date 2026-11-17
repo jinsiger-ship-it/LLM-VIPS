@@ -22,7 +22,7 @@ const staticFiles = new Map([
   ['/css/legacy-v1.1/style.css', ['css/legacy-v1.1/style.css', 'text/css']],
   ['/js/legacy-v1.1/app.js', ['js/legacy-v1.1/app.js', 'text/javascript']],
   ...['style', 'mobile'].map(name => [`/css/${name}.css`, [`css/${name}.css`, 'text/css']]),
-  ...['game-data', 'storage', 'game', 'tickets', 'match-results', 'account', 'app']
+  ...['game-data', 'storage', 'game', 'career-story', 'tickets', 'match-results', 'account', 'app']
     .map(name => [`/js/${name}.js`, [`js/${name}.js`, 'text/javascript']]),
   ...['bat-hit','bat-miss','pitch-strikeout'].map(name => [`/assets/broadcast/${name}.mp4`, [`assets/broadcast/${name}.mp4`, 'video/mp4']]),
   ...['bat-ready','pitch-ready','hit','flyout','strikeout','home-run'].map(name => [`/assets/broadcast/${name}.webp`, [`assets/broadcast/${name}.webp`, 'image/webp']])
@@ -56,7 +56,7 @@ function serveVideo(request, response, filename) {
 
 function model() {
   const context = vm.createContext({});
-  for (const name of ['game-data', 'storage', 'game', 'tickets']) {
+  for (const name of ['game-data', 'storage', 'game', 'career-story', 'tickets']) {
     vm.runInContext(readFileSync(path.join(__dirname, 'js', name + '.js'), 'utf8'), context);
   }
   return context.FP;
@@ -100,7 +100,7 @@ function passwordHash(password, salt) {
 }
 
 function createServer({ databasePath, tls, publicOrigin } = {}) {
-  const index = readFileSync(path.join(__dirname, 'index.html'), 'utf8').replace('<script src="js/account.js?v=20261113-game">', '<script src="js/account.js?v=20261113-game" data-account-server>');
+  const index = readFileSync(path.join(__dirname, 'index.html'), 'utf8').replace(/<script src="js\/account\.js[^"]*"/, match => match + ' data-account-server');
   const filename = databasePath ?? path.join(__dirname, 'database', 'fanplay.sqlite');
   if (filename !== ':memory:') mkdirSync(path.dirname(filename), { recursive: true });
   const db = new DatabaseSync(filename);

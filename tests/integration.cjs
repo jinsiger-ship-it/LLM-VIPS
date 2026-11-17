@@ -3,7 +3,7 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const values=new Map();let fail=false,checks=0;
 const storage={getItem:k=>values.get(k)??null,setItem:(k,v)=>{if(fail)throw Error('quota');values.set(k,v);}};
 const ctx=vm.createContext({console,localStorage:storage});
-for(const f of ['game-data','storage','game','tickets'])vm.runInContext(fs.readFileSync(__dirname+'/../js/'+f+'.js','utf8'),ctx);
+for(const f of ['game-data','storage','game','career-story','tickets'])vm.runInContext(fs.readFileSync(__dirname+'/../js/'+f+'.js','utf8'),ctx);
 const F=ctx.FP;F.toast=()=>{};const test=(name,fn)=>{fn();checks++;console.log('PASS '+name);};
 test('기본값과 잘못된 커리어 분리 복구',()=>{assert.equal(F.normalize({career:{}}).career,null);assert.equal(F.normalize({career:{stats:[1,'2',3],step:1,log:[]}}).career,null);});
 const ticket={...F.copy(F.sample),id:'test'};

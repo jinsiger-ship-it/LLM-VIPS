@@ -1,0 +1,6 @@
+
+# Local browser verification outputs
+qa/
+database/*.sqlite*
+.env
+.env.*
