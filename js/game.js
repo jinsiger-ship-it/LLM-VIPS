@@ -17,6 +17,79 @@ FP.careerRoles = {
 };
 FP.careerStatLabels = position => position==='투수' ? ['구위','제구','컨디션'] : ['장타력','컨택','컨디션'];
 
+FP.careerAbilityLabels = position => position==='투수'
+ ? ['구속','구위','제구','변화구','체력','멘탈']
+ : ['컨택','파워','주루','선구안','수비','송구'];
+FP.careerStartingTotal = 240;
+FP.careerLegacyStartingTotal = 300;
+FP.normalizeCareerAbilities = (position, abilities, expectedTotal=FP.careerStartingTotal) => {
+ if (!['투수','타자'].includes(position) || !Array.isArray(abilities) || abilities.length!==6 ||
+  abilities.some(value => !Number.isInteger(value) || value<0 || value>100) ||
+  abilities.reduce((total,value) => total+value,0)!==expectedTotal) return null;
+ return [...abilities];
+};
+const abilityProfiles = {
+ '타자': [
+  {style:'균형형',stats:[40,40,40,40,40,40]},
+  {style:'거포형',stats:[32,70,28,36,36,38]},
+  {style:'교타·주루형',stats:[58,24,66,43,26,23]}
+ ],
+ '투수': [
+  {style:'강속구형',stats:[68,55,29,25,35,28]},
+  {style:'제구·변화구형',stats:[38,40,64,58,22,18]},
+  {style:'균형형',stats:[42,39,41,36,45,37]}
+ ]
+};
+FP.careerAbilityCandidates = (seed,position) => {
+ if (!Number.isInteger(seed) || seed<0 || seed>0xffffffff || !abilityProfiles[position]) return [];
+ const offset=position==='투수' ? 1000 : 2000;
+ const options=abilityProfiles[position].map((profile,index) => {
+  const stats=[...profile.stats];
+  for (let turn=0;turn<12;turn++) {
+   const from=careerRoll(seed,offset+index*101+turn*13,6);
+   let to=careerRoll(seed,offset+index*101+turn*13+5,5);
+   if (to>=from) to++;
+   const requested=1+careerRoll(seed,offset+index*101+turn*13+9,7);
+   const amount=Math.max(0,Math.min(requested,stats[from]-15,75-stats[to]));
+   stats[from]-=amount;
+   stats[to]+=amount;
+  }
+  return {style:profile.style,stats};
+ });
+ for (let index=options.length-1;index>0;index--) {
+  const other=careerRoll(seed,offset+500+index,index+1);
+  [options[index],options[other]]=[options[other],options[index]];
+ }
+ return options;
+};
+FP.normalizeCareerHand = (position, hand) =>
+ position==='투수' ? (['좌투','우투'].includes(hand) ? hand : null) :
+ position==='타자' ? (['좌타','우타'].includes(hand) ? hand : null) : null;
+FP.careerEngineStats = (position, a) => position==='투수'
+ ? [Math.round((a[0]+a[1]+a[3])/3),Math.round((a[2]+a[3]+a[5])/3),a[4]]
+ : [Math.round((a[0]+a[1])/2),Math.round((a[0]+a[3]+a[4]+a[5])/4),a[2]];
+FP.signCustomCareer = (id, name, position, hand, abilities) => {
+ if (FP.data.career || FP.data.careerDraft?.id!==id) return false;
+ const validAbilities=FP.normalizeCareerAbilities(position,abilities,FP.careerLegacyStartingTotal);
+ const validHand=FP.normalizeCareerHand(position,hand);
+ if (!validAbilities || !validHand) return false;
+ const career=FP.restoreCareer({...FP.data.careerDraft,rules:4,position,hand,
+  startingAbilities:validAbilities,name:FP.str(name,24).trim()||'신인 선수',moves:[]});
+ if (!career) return false;
+ return FP.transact(data=>{data.career=career;data.careerDraft=null;});
+};
+FP.signRandomCareer = (id, name, position, hand, selection) => {
+ const draft=FP.data.careerDraft;
+ if (FP.data.career || !draft || draft.id!==id || !FP.normalizeCareerHand(position,hand) ||
+  !Number.isInteger(selection) || selection<0 || selection>2) return false;
+ const selected=FP.careerAbilityCandidates(draft.seed,position)[selection];
+ if (!selected || !FP.normalizeCareerAbilities(position,selected.stats)) return false;
+ const career=FP.restoreCareer({...draft,rules:5,position,hand,candidateIndex:selection,
+  startingAbilities:selected.stats,name:FP.str(name,24).trim()||'신인 선수',moves:[]});
+ if (!career) return false;
+ return FP.transact(data=>{data.career=career;data.careerDraft=null;});
+};
+
 const prospects = [
  {position:'투수', style:'강속구 투수', stats:[61,42,57], trait:'구위가 좋지만 제구가 불안해요.'},
  {position:'투수', style:'제구형 투수', stats:[46,61,52], trait:'제구가 좋고 구위를 더 키울 수 있어요.'},
@@ -159,7 +232,7 @@ FP.careerRecord = (career, entries = career.log) => {
 
 FP.careerConclusion = career => {
  const majors = career.log.filter(entry => entry.role!=='farm').length;
- if (career.rules===3) return majors>=Math.ceil(career.step/2) ? '1군 베테랑' : majors ? '1군 무대를 밟은 선수' : '2군을 지킨 베테랑';
+ if ([3,4,5].includes(career.rules)) return majors>=Math.ceil(career.step/2) ? '1군 베테랑' : majors ? '1군 무대를 밟은 선수' : '2군을 지킨 베테랑';
  return majors>=2 ? '1군에 자리 잡은 선수' : majors===1 ? '1군 무대를 밟은 선수' : '2군에서 성장한 선수';
 };
 
@@ -168,7 +241,7 @@ FP.careerTicket = (career, date) => {
  return {
   ...FP.sample, id:`career-${career.id}`, date, mode:'커리어', stadium:'FANPLAY 가상 리그',
   home:career.name, away:career.position, hs:0, as:0,
-  tag:entry?.moment || (career.rules===3 ? '은퇴 기념' : '3시즌 완주'), note:entry ? `${entry.season}시즌 · ${FP.careerRecord(career,[entry])}` : FP.careerRecord(career),
+  tag:entry?.moment || ([3,4,5].includes(career.rules) ? '은퇴 기념' : '3시즌 완주'), note:entry ? `${entry.season}시즌 · ${FP.careerRecord(career,[entry])}` : FP.careerRecord(career),
   stickerIds:['rookie']
  };
 };
@@ -176,8 +249,8 @@ FP.careerTicket = (career, date) => {
 const autoTick = -1;
 const lastRegularSeason = 7;
 
-FP.careerComplete = career => career?.rules===3 ? career.retired : career?.rules===2 && career.step===FP.careerLength;
-FP.restoreCareer = saved => saved?.rules===3 ? restoreAutoCareer(saved) : FP.restoreNewCareer(saved);
+FP.careerComplete = career => [3,4,5].includes(career?.rules) ? career.retired : career?.rules===2 && career.step===FP.careerLength;
+FP.restoreCareer = saved => [3,4,5].includes(saved?.rules) ? restoreAutoCareer(saved) : FP.restoreNewCareer(saved);
 
 function autoRating(career) {
  const [power, technique, condition] = career.stats;
@@ -273,6 +346,12 @@ function autoDecision(career) {
 
 function changeAutoStats(career, delta) {
  career.stats = career.stats.map((value,index) => FP.number(value+delta[index],0,100));
+ if ([4,5].includes(career.rules)) {
+  const groups=career.position==='투수' ? [[0,1],[2,3],[4]] : [[1],[0,3],[2]];
+  for (let index=0;index<3;index++) {
+   for (const stat of groups[index]) career.abilities[stat]=FP.number(career.abilities[stat]+delta[index],0,100);
+  }
+ }
 }
 
 function resolveAutoMove(career, move) {
@@ -324,12 +403,32 @@ function resolveAutoMove(career, move) {
 }
 
 function restoreAutoCareer(saved) {
- const draft = FP.normalizeCareerDraft(saved);
- if (!draft || ![0,1,2].includes(saved.prospect) || !Array.isArray(saved.moves) || saved.moves.length>24) return null;
- const candidate = FP.careerCandidates(draft.seed)[saved.prospect];
- const career = {...draft,rules:3,prospect:saved.prospect,moves:[...saved.moves],name:FP.str(saved.name,24)||'신인 선수',
-  position:candidate.position,style:candidate.style,stats:candidate.stats,club:careerRoll(draft.seed,70,2) ? '하버스' : '웨이브스',
-  role:'farm',step:0,segment:0,log:[],pending:null,retired:false,extended:false,rest:false,decision:'',news:'드래프트를 마치고 2군에서 첫 시즌을 시작해요.'};
+ const draft=FP.normalizeCareerDraft(saved);
+ const custom=[4,5].includes(saved?.rules);
+ if (!draft || !Array.isArray(saved.moves) || saved.moves.length>24) return null;
+ if (!custom && ![0,1,2].includes(saved.prospect)) return null;
+ const expectedTotal=saved.rules===4 ? FP.careerLegacyStartingTotal : FP.careerStartingTotal;
+ const startingAbilities=custom ? FP.normalizeCareerAbilities(saved.position,saved.startingAbilities,expectedTotal) : null;
+ const hand=custom ? FP.normalizeCareerHand(saved.position,saved.hand) : null;
+ if (custom && (!startingAbilities || !hand)) return null;
+ let profile=null;
+ if (saved.rules===5) {
+  if (!Number.isInteger(saved.candidateIndex) || saved.candidateIndex<0 || saved.candidateIndex>2) return null;
+  profile=FP.careerAbilityCandidates(draft.seed,saved.position)[saved.candidateIndex];
+  if (!profile || profile.stats.some((value,index) => value!==startingAbilities[index])) return null;
+ }
+ const candidate=custom ? {
+  position:saved.position,
+  style:saved.rules===5 ? `${hand} · ${profile.style}` : `${hand} ${saved.position}`,
+  stats:FP.careerEngineStats(saved.position,startingAbilities)
+ } : FP.careerCandidates(draft.seed)[saved.prospect];
+ const career={...draft,rules:saved.rules,prospect:custom?null:saved.prospect,moves:[...saved.moves],
+  name:FP.str(saved.name,24)||'신인 선수',position:candidate.position,style:candidate.style,stats:candidate.stats,
+  ...(custom?{hand,startingAbilities,abilities:[...startingAbilities]}:{}),
+  ...(saved.rules===5?{candidateIndex:saved.candidateIndex}:{}),
+  club:careerRoll(draft.seed,70,2) ? '하버스' : '웨이브스',
+  role:'farm',step:0,segment:0,log:[],pending:null,retired:false,extended:false,rest:false,decision:'',
+  news:'드래프트를 마치고 2군에서 첫 시즌을 시작해요.'};
  for (const move of career.moves) {
   if (![autoTick,0,1].includes(move) || !resolveAutoMove(career,move)) return null;
  }
@@ -338,7 +437,7 @@ function restoreAutoCareer(saved) {
 
 FP.advanceAutoCareer = (id, version, move, skip = false) => {
  const current = FP.data.career;
- if (current?.rules!==3 || current.id!==id || current.moves.length!==version || ![autoTick,0,1].includes(move)) return false;
+ if (![3,4,5].includes(current?.rules) || current.id!==id || current.moves.length!==version || ![autoTick,0,1].includes(move)) return false;
  const next = restoreAutoCareer({...current,moves:[...current.moves,move]});
  if (!next) return false;
  while (skip && !next.pending && !next.retired) {

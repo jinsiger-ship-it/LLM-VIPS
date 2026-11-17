@@ -28,7 +28,7 @@ FP.normalize = raw => {
  if(Array.isArray(r.rewards)) for(const id of r.rewards){const mapped={night:'steady',gold:'star',trophy:'legend'}[id];if(mapped&&!d.inventory.itemIds.includes(mapped))d.inventory.itemIds.push(mapped);}
  d.profile.selectedTitleId=d.inventory.titleIds.includes(p.selectedTitleId)?p.selectedTitleId:null;
  const c=r.career;
- if(c?.rules===2 || c?.rules===3) {
+ if([2,3,4,5].includes(c?.rules)) {
   d.career=FP.restoreCareer(c);
  } else if(c && Array.isArray(c.stats)&&c.stats.length===3&&c.stats.every(n=>typeof n==='number'&&Number.isFinite(n))&&Number.isInteger(c.step)&&c.step>=0&&c.step<=8&&Array.isArray(c.log)) {
  d.career={name:FP.str(c.name,24)||'신인 선수',position:['투수','포수','내야수','외야수'].includes(c.position)?c.position:'투수',stats:c.stats.map(n=>FP.number(n,0,100)),step:c.step,log:c.log.slice(0,8).map(l=>({season:FP.number(l.season,1,8),text:FP.str(l.text ?? l.choice,200),delta:Array.isArray(l.delta)?l.delta.slice(0,3).map(n=>FP.number(n,-100,100)):[]}))};

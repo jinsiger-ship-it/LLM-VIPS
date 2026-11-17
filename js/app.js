@@ -153,27 +153,59 @@ function careerArchive() {
     ${history.map(career => `<article><b>${E(career.name)} · ${career.position}</b>${careerSummary(career)}</article>`).join('')}</details>`;
 }
 
+function syncCareerSetup(form) {
+  const position=form.querySelector('input[name="position"]:checked')?.value || '타자';
+  form.querySelectorAll('[data-career-for]').forEach(group=>{
+    const active=group.dataset.careerFor===position;
+    group.hidden=!active;
+    group.querySelectorAll('input').forEach(input=>{input.disabled=!active;});
+  });
+  const group=[...form.querySelectorAll('[data-career-for]')].find(el=>el.dataset.careerFor===position);
+  const selected=group?.querySelector('input[data-career-candidate]:checked');
+  const hand=group?.querySelector('input[data-career-hand]:checked');
+  form.querySelector('button[type="submit"]').disabled=!(selected && hand);
+}
+
 function careerLobby() {
-  const board = FP.data.careerDraft;
-  const selection = board ? `<form id="career-form" class="panel">
-    <input type="hidden" name="board" value="${board.id}">
-    <fieldset class="career-prospects"><legend>신인 후보 3명</legend>
-    ${FP.careerCandidates(board.seed).map((candidate, index) => `<label>
-      <input type="radio" name="prospect" value="${index}" required>
-      <span><b>${candidate.position} · ${candidate.style}</b><small>${candidate.trait}</small>
-      <small>${FP.careerStatLabels(candidate.position).map((label, stat) => `${label} ${candidate.stats[stat]}`).join(' · ')}</small></span></label>`).join('')}
-    </fieldset>${field('선수 이름','name','','text','maxlength="24" placeholder="신인 선수"')}
-    <button class="btn" type="submit">이 선수로 시작하기</button></form>`
-    : `<section class="panel"><h2>신인 드래프트</h2><p>선수를 고르면 시즌이 자동으로 흘러가요. 진로가 갈리는 순간에만 선택해요.</p>
-    ${button('드래프트 시작','career-draft')}<p class="muted">가상 리그의 기록은 진행할 때마다 저장돼요.</p></section>`;
-  return `${heading('BASEBALL CAREER','드래프트부터 은퇴까지','한 선수의 야구 인생을 지켜보세요.')}
+  const board=FP.data.careerDraft;
+  const selection=board ? `<form id="career-form" class="panel">
+    <input type="hidden" name="board" value="${E(board.id)}">
+    ${field('선수 이름','name','','text','maxlength="24" placeholder="신인 선수"')}
+    <fieldset class="career-prospects"><legend>포지션 선택</legend>
+      <label><input type="radio" name="position" value="타자" checked> 타자</label>
+      <label><input type="radio" name="position" value="투수"> 투수</label>
+    </fieldset>
+    ${['타자','투수'].map(position=>{
+      const active=position==='타자';
+      const hands=active?['우타','좌타']:['우투','좌투'];
+      const labels=FP.careerAbilityLabels(position);
+      return `<fieldset data-career-for="${position}" ${active?'':'hidden'}><legend>${position} 설정</legend>
+        <div class="career-prospects">${hands.map((hand,index)=>`<label><input type="radio" name="hand-${position}" data-career-hand value="${hand}" ${index===0?'checked':''} ${active?'':'disabled'}> ${hand}</label>`).join('')}</div>
+        <h3>랜덤 능력치 후보 3개 중 선택</h3>
+        <p class="muted">각 후보의 시작 총합 240점 · 평균 40점 (6개 능력치)</p>
+        <div class="career-prospects">${FP.careerAbilityCandidates(board.seed,position).map((candidate,index)=>`<label class="career-candidate">
+          <input type="radio" name="candidate-${position}" data-career-candidate value="${index}" required ${active?'':'disabled'}>
+          <span><b>후보 ${String.fromCharCode(65+index)} · ${candidate.style}</b>
+            <small>${labels.map((label,stat)=>`${label} ${candidate.stats[stat]}`).join(' · ')}</small>
+            <small>총합 ${candidate.stats.reduce((sum,n)=>sum+n,0)}점</small>
+          </span></label>`).join('')}</div>
+        </fieldset>`;
+    }).join('')}
+    <p class="muted">후보 하나를 선택하면 커리어를 시작할 수 있어요. 같은 드래프트에서는 새로고침해도 후보가 유지됩니다.</p>
+    <button class="btn" type="submit" disabled>선택한 선수로 시작하기</button></form>`
+    : `<section class="panel"><h2>나만의 선수 만들기</h2>
+      <p>선수 이름, 타자/투수, 좌타·우타 또는 좌투·우투를 고른 뒤 랜덤 능력치 후보 3개 중 하나를 선택하세요.</p>
+      ${button('선수 만들기 시작','career-draft')}
+      <p class="muted">각 후보의 능력치 합계는 240점입니다. 새로운 드래프트마다 후보가 달라집니다.</p>
+      </section>`;
+  return `${heading('BASEBALL CAREER','나만의 선수 만들기','랜덤 후보 3개 중 하나를 선택하세요 · 총합 240점')}
     <div class="game-start">${selection}</div>${careerArchive()}`;
 }
 
 function game() {
   const career = FP.data.career;
   if (!career) return careerLobby();
-  if (career.rules===3) return autoGame(career);
+  if ([3,4,5].includes(career.rules)) return autoGame(career);
   if (career.rules!==2) return legacyGame(career)+careerArchive();
   const completed = career.step===FP.careerLength;
   const labels = FP.careerStatLabels(career.position);
@@ -205,7 +237,9 @@ function autoGame(career) {
   const season = step+1;
   const phase = season<=2 ? '신인' : season<=5 ? '전성기' : '베테랑';
   const last = log.at(-1);
-  const labels = FP.careerStatLabels(career.position);
+  const custom=[4,5].includes(career.rules);
+  const labels=custom ? FP.careerAbilityLabels(career.position) : FP.careerStatLabels(career.position);
+  const displayedStats=custom ? career.abilities : career.stats;
   const status = retired ? `${step}시즌 · 은퇴` : pending?.choices[0].retire ? '7시즌 결산' : `${season}시즌 · ${phase} · ${segment===0?'4월':'7월'}`;
   return `${heading('PLAYER CAREER',`${E(name)}의 야구 인생`,`${club} · ${FP.careerRoles[career.role]}`)}
     <div class="game-grid auto-career">
@@ -223,7 +257,7 @@ function autoGame(career) {
           ${button('다음 선택까지','auto-skip',version,'secondary')}</div>`}
         ${last && !retired ? `<div class="result"><b>${last.season}시즌 결산 · ${FP.careerRoles[last.role]}</b><p>${FP.careerRecord(career,[last])}</p></div>` : ''}
       </section>
-      <aside class="panel"><h2>선수 상태</h2>${career.stats.map((value,index)=>`<div class="stat"><label>${labels[index]} <b>${value}</b></label>
+      <aside class="panel"><h2>선수 상태</h2>${displayedStats.map((value,index)=>`<div class="stat"><label>${labels[index]} <b>${value}</b></label>
         <progress aria-label="${labels[index]}" max="100" value="${value}">${value}</progress></div>`).join('')}</aside>
     </div>
     ${log.length ? `<details class="panel history"><summary>시즌 기록 ${log.length}개</summary>${log.map(entry=>
@@ -324,7 +358,7 @@ function scheduleCareer() {
   const c = FP.data.career;
   const video = app.querySelector?.('.broadcast-clip');
   if (location.hash!=='#game' || document.hidden || careerPaused || careerSaving || FP.account.checking || FP.account.busy ||
-    c?.rules!==3 || c.pending || c.retired) {
+    ![3,4,5].includes(c?.rules) || c.pending || c.retired) {
     if (video) video.pause();
     if (careerBroadcast) careerBroadcast.movingAt = null;
     return;
@@ -382,6 +416,7 @@ function render() {
   scheduleCareer();
 }
 function syncDraft(form){for(const name of ['date','stadium','home','away','hs','as','mode','tag','note','theme','color'])if(form.elements[name])draft[name]=['hs','as'].includes(name)?(form.elements[name].value === '' ? '' : Number(form.elements[name].value)):form.elements[name].value;if(form.elements.frameId)draft.frameId=new FormData(form).get('frameId')||'default';if(formStage===2)draft.stickerIds=new FormData(form).getAll('stickerIds');}
+app.addEventListener('change',e=>{const form=e.target.closest('#career-form');if(form)syncCareerSetup(form);});
 app.addEventListener('input',e=>{const form=e.target.closest('#ticket-form');if(form&&e.target.type!=='file'){syncDraft(form);document.querySelector('#ticket-preview').innerHTML=FP.ticket({...draft,hs:draft.hs||0,as:draft.as||0,home:draft.home||'홈 팀',away:draft.away||'원정 팀'});}});
 app.addEventListener('change',async e=>{if(e.target.id!=='photo')return;const file=e.target.files[0];if(!file)return;if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>12*1024*1024){FP.toast('JPG/PNG/WebP 이미지, 최대 12MB까지 선택할 수 있습니다.');e.target.value='';return;}const targetDraft=draft;photoBusy=true;document.querySelector('#photo-status').textContent='사진을 처리하고 있습니다…';document.querySelector('#ticket-form button[type=submit]').disabled=true;try{const bitmap=await createImageBitmap(file);try{const ratio=Math.min(1,900/Math.max(bitmap.width,bitmap.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*ratio));canvas.height=Math.max(1,Math.round(bitmap.height*ratio));canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);if(draft===targetDraft)draft.photo=canvas.toDataURL('image/jpeg',.68);}finally{bitmap.close();}FP.toast('사진을 추가했습니다.');}catch{FP.toast('이미지를 읽지 못했습니다. 다른 사진을 선택해 주세요.');}finally{photoBusy=false;if(draft===targetDraft&&location.hash==='#create')render();}});
 async function submitAccount(form) {
@@ -417,7 +452,16 @@ async function submitAccount(form) {
 
 app.addEventListener('submit',async e=>{e.preventDefault();const form=e.target;
 if(FP.account.checking || FP.account.busy) return;
-if(form.dataset.accountAction){await submitAccount(form);return;}if(form.id==='ticket-form'){syncDraft(form);if(photoBusy)return;if(formStage<3){formStage++;render();}else if(await FP.saveTicket(draft)){draft=null;location.hash='collection';FP.toast('티켓을 수집함에 저장했습니다.');}}else if(form.id==='career-form'){if(await FP.signAutoProspect(form.elements.board.value,form.elements.name.value,Number(new FormData(form).get('prospect'))))render();}else if(form.id==='profile-form'){if(await FP.transact(d=>{d.profile.nickname=form.elements.nickname.value.trim()||'야구팬';d.profile.team=form.elements.team.value;d.profile.selectedTitleId=form.elements.title.value||null;})){render();FP.toast('프로필을 저장했습니다.');}}else if(form.classList.contains('comment-form')){const value=form.elements.comment.value.trim();if(value&&await FP.transact(d=>{d.posts.find(p=>p.id===form.dataset.post).comments.push({nickname:d.profile.nickname,text:value.slice(0,200)});}))render();}});
+if(form.dataset.accountAction){await submitAccount(form);return;}if(form.id==='ticket-form'){syncDraft(form);if(photoBusy)return;if(formStage<3){formStage++;render();}else if(await FP.saveTicket(draft)){draft=null;location.hash='collection';FP.toast('티켓을 수집함에 저장했습니다.');}}else if(form.id==='career-form'){
+      const data=new FormData(form);
+      const position=data.get('position');
+      const group=form.querySelector(`[data-career-for="${position}"]`);
+      const raw=group?.querySelector('input[data-career-candidate]:checked')?.value;
+      const hand=group?.querySelector('input[data-career-hand]:checked')?.value;
+      const selection=raw===undefined?-1:Number(raw);
+      if(await FP.signRandomCareer(data.get('board'),data.get('name'),position,hand,selection)) render();
+      else FP.toast('랜덤 능력치 후보 1개를 선택해 주세요.');
+    }else if(form.id==='profile-form'){if(await FP.transact(d=>{d.profile.nickname=form.elements.nickname.value.trim()||'야구팬';d.profile.team=form.elements.team.value;d.profile.selectedTitleId=form.elements.title.value||null;})){render();FP.toast('프로필을 저장했습니다.');}}else if(form.classList.contains('comment-form')){const value=form.elements.comment.value.trim();if(value&&await FP.transact(d=>{d.posts.find(p=>p.id===form.dataset.post).comments.push({nickname:d.profile.nickname,text:value.slice(0,200)});}))render();}});
 app.addEventListener('click',async e=>{const b=e.target.closest('[data-action]');if(!b||FP.account.checking||FP.account.busy)return;const {action:a,value:v}=b.dataset;
 if(a==='stage'){syncDraft(document.querySelector('#ticket-form'));formStage=Number(v);render();}
 if(a==='remove-photo'){draft.photo='';render();}
