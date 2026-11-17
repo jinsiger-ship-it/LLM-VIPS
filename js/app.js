@@ -185,9 +185,16 @@ function careerLobby() {
         <p class="muted">각 후보의 시작 총합 240점 · 평균 40점 (6개 능력치)</p>
         <div class="career-prospects">${FP.careerAbilityCandidates(board.seed,position).map((candidate,index)=>`<label class="career-candidate">
           <input type="radio" name="candidate-${position}" data-career-candidate value="${index}" required ${active?'':'disabled'}>
-          <span><b>후보 ${String.fromCharCode(65+index)} · ${candidate.style}</b>
-            <small>${labels.map((label,stat)=>`${label} ${candidate.stats[stat]}`).join(' · ')}</small>
-            <small>총합 ${candidate.stats.reduce((sum,n)=>sum+n,0)}점</small>
+          <span class="career-candidate-body"><b class="career-candidate-title">후보 ${String.fromCharCode(65+index)} · ${candidate.style}</b>
+            <span class="career-ability-grid" aria-label="6개 능력치 막대그래프">
+              ${labels.map((label,stat)=>`<span class="career-ability">
+                <span class="career-ability-heading"><span>${label}</span><span>${candidate.stats[stat]}</span></span>
+                <span class="career-ability-track" role="meter" aria-label="${label} 능력치" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${candidate.stats[stat]}">
+                  <span class="career-ability-fill" style="width:${candidate.stats[stat]}%"></span>
+                </span>
+              </span>`).join('')}
+            </span>
+            <small class="career-candidate-total">총합 ${candidate.stats.reduce((sum,n)=>sum+n,0)}점 · 평균 40점</small>
           </span></label>`).join('')}</div>
         </fieldset>`;
     }).join('')}
