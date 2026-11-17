@@ -1,3 +1,16 @@
+# FANPLAY
+
+## ▶️ FANPLAY 실행하기
+
+**[⚾ FANPLAY 모바일 웹앱 바로 실행](https://jinsiger-ship-it.github.io/LLM-VIPS/)**
+
+**[🎮 게임 화면 바로 실행](https://jinsiger-ship-it.github.io/LLM-VIPS/#game)**
+
+야구 관람 티켓을 만들고 수집하며 선수 커리어 게임을 즐기는 모바일 웹앱입니다. GitHub Pages에서 만든 기록은 브라우저에 저장됩니다.
+
+같은 브라우저의 이전 FANPLAY 기록은 첫 실행에 읽어옵니다. 이후 메인과 보관본의 기록은 별도로 저장됩니다.
+
+---
 
 ## 1. 버전 관리
 
