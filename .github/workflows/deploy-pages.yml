@@ -2,19 +2,13 @@ name: Deploy FANPLAY prototype to GitHub Pages
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
-  pages: write
-  id-token: write
-concurrency:
-  group: github-pages
-  cancel-in-progress: true
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  verify:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
@@ -23,19 +17,44 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Verify careers and saved data
+          cache: npm
+      - name: Install test dependencies
+        run: npm ci
+      - name: Verify game, saved data and SQL
         run: |
-          node tests/integration.cjs
-          node tests/screens.cjs
-          node tests/story.cjs
-          node tests/merged-career.cjs
-          node tests/accounts.cjs
+          for file in js/*.js; do node --check "$file"; done
+          npm test
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Verify login, saving and community in Chromium
+        run: npm run test:browser
+  deploy:
+    needs: verify
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+    env:
+      PAGES_ARTIFACT_NAME: github-pages-${{ github.run_attempt }}
+    concurrency:
+      group: github-pages
+      cancel-in-progress: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Prepare public files
         run: |
           site="$RUNNER_TEMP/fanplay-pages"
           mkdir -p "$site/snapshots"
+          touch "$site/.nojekyll"
           cp index.html "$site/"
           cp -R pages css js assets "$site/"
           for version in 2026-11-06-fanplay 2026-11-10-fanplay-mobile; do
@@ -45,7 +64,26 @@ jobs:
       - name: Upload website files
         uses: actions/upload-pages-artifact@v3
         with:
+          name: ${{ env.PAGES_ARTIFACT_NAME }}
           path: ${{ runner.temp }}/fanplay-pages
+      - name: Wait for the Pages artifact to become visible
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in {1..8}; do
+            artifact=$(gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?name=${PAGES_ARTIFACT_NAME}" \
+              --jq '.artifacts[] | select(.expired | not) | .id')
+            if [[ -n "$artifact" ]]; then
+              # Allow time for the deploy action's artifact lookup to catch up.
+              sleep 5
+              exit 0
+            fi
+            sleep 5
+          done
+          echo 'Pages artifact is not visible after 8 checks.' >&2
+          exit 1
       - name: Deploy site
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: ${{ env.PAGES_ARTIFACT_NAME }}

@@ -22,7 +22,7 @@ const staticFiles = new Map([
   ['/css/legacy-v1.1/style.css', ['css/legacy-v1.1/style.css', 'text/css']],
   ['/js/legacy-v1.1/app.js', ['js/legacy-v1.1/app.js', 'text/javascript']],
   ...['style', 'mobile'].map(name => [`/css/${name}.css`, [`css/${name}.css`, 'text/css']]),
-  ...['game-data', 'storage', 'game', 'career-story', 'tickets', 'match-results', 'account', 'cloud-config', 'cloud-account', 'app']
+  ...['game-data', 'storage', 'game', 'career-story', 'tickets', 'match-results', 'account', 'cloud-config', 'cloud-account', 'community', 'app']
     .map(name => [`/js/${name}.js`, [`js/${name}.js`, 'text/javascript']]),
   ...['bat-hit','bat-miss','pitch-strikeout'].map(name => [`/assets/broadcast/${name}.mp4`, [`assets/broadcast/${name}.mp4`, 'video/mp4']]),
   ...['bat-ready','pitch-ready','hit','flyout','strikeout','home-run'].map(name => [`/assets/broadcast/${name}.webp`, [`assets/broadcast/${name}.webp`, 'image/webp']])
