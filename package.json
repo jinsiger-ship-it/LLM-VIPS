@@ -1,13 +1,13 @@
 {
   "name": "fanplay",
   "private": true,
-  "version": "0.10.3",
+  "version": "0.11.0",
   "engines": {
     "node": ">=24"
   },
   "scripts": {
     "test": "node tests/integration.cjs && node tests/screens.cjs && node tests/story.cjs && node tests/merged-career.cjs && node tests/accounts.cjs && node tests/reliability.cjs && node tests/demo-community.cjs && node tests/community-v2.cjs && node tests/reset-demo.cjs",
-    "test:browser": "node tests/browser-story.cjs && node tests/cloud-demo.cjs && node tests/browser-demo-community.cjs && node tests/browser-reliability.cjs"
+    "test:browser": "node tests/browser-story.cjs && node tests/cloud-demo.cjs && node tests/browser-demo-community.cjs && node tests/browser-reliability.cjs && node tests/browser-kbo-lookup.cjs && node tests/browser-kbo-lookup.cjs --cloud"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.16",

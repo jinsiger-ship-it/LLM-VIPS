@@ -6,6 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { promisify } = require('node:util');
 const { DatabaseSync } = require('node:sqlite');
+const { lookupKboGames, kboTeams } = require('./kbo-lookup.cjs');
 
 const derive = promisify(scrypt);
 const SESSION_SECONDS = 7 * 24 * 60 * 60;
@@ -56,7 +57,7 @@ function serveVideo(request, response, filename) {
 
 function model() {
   const context = vm.createContext({});
-  for (const name of ['game-data', 'storage', 'game', 'career-story', 'tickets']) {
+  for (const name of ['game-data', 'storage', 'game', 'career-story', 'tickets', 'match-results']) {
     vm.runInContext(readFileSync(path.join(__dirname, 'js', name + '.js'), 'utf8'), context);
   }
   return context.FP;
@@ -99,8 +100,9 @@ function passwordHash(password, salt) {
   });
 }
 
-function createServer({ databasePath, tls, publicOrigin } = {}) {
-  const index = readFileSync(path.join(__dirname, 'index.html'), 'utf8').replace(/<script src="js\/account\.js[^"]*"/, match => match + ' data-account-server');
+function createServer({ databasePath, tls, publicOrigin, kboLookup = false } = {}) {
+  let index = readFileSync(path.join(__dirname, 'index.html'), 'utf8').replace(/<script src="js\/account\.js[^"]*"/, match => match + ' data-account-server');
+  if (kboLookup) index = index.replace('<body>', '<body data-kbo-lookup>');
   const filename = databasePath ?? path.join(__dirname, 'database', 'fanplay.sqlite');
   if (filename !== ':memory:') mkdirSync(path.dirname(filename), { recursive: true });
   const db = new DatabaseSync(filename);
@@ -277,7 +279,22 @@ function createServer({ databasePath, tls, publicOrigin } = {}) {
     response.setHeader('Referrer-Policy', 'no-referrer');
     response.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     try {
-      const route = new URL(request.url, 'http://fanplay.invalid').pathname;
+      const url = new URL(request.url, 'http://fanplay.invalid');
+      const route = url.pathname;
+      if (kboLookup && request.method === 'GET' && route === '/api/kbo-games') {
+        if (request.headers['x-fanplay-request'] !== '1') throw problem(403, '이 사이트에서 보낸 요청만 처리할 수 있습니다.');
+        const date = url.searchParams.get('date');
+        const team = url.searchParams.get('team') ?? '';
+        const stadium = (url.searchParams.get('stadium') ?? '').trim();
+        if (!fp.validDate(date) || (team && !kboTeams.has(team)) || stadium.length > 80 || (!team && !stadium)) {
+          throw problem(400, '경기 날짜와 구단 또는 구장을 확인해 주세요.');
+        }
+        let rows;
+        try { rows = await lookupKboGames(date, team, stadium); }
+        catch { throw problem(503, 'KBO 서버에 연결하지 못했어요. 서버를 확인하거나 직접 입력해 주세요.'); }
+        const matches = rows.length ? fp.parseMatchResults(JSON.stringify(rows), false, true).matches : [];
+        return json(response, 200, matches);
+      }
       if (route.startsWith('/api/')) return await handleApi(request, response, route);
       const file = staticFiles.get(route);
       if (!file || !['GET', 'HEAD'].includes(request.method)) throw problem(404, '경로를 찾을 수 없습니다.');
@@ -314,7 +331,8 @@ if (require.main === module) {
   if (publicOrigin && (!publicOrigin.startsWith('https://') || new URL(publicOrigin).origin !== publicOrigin)) {
     throw new Error('FANPLAY_PUBLIC_ORIGIN은 경로 없는 HTTPS 주소여야 합니다.');
   }
-  createServer({ databasePath: process.env.FANPLAY_DATABASE, tls, publicOrigin }).listen(port, host, () => {
+  const kboLookup = process.env.FANPLAY_KBO_LOOKUP === '1' && ['localhost', '127.0.0.1', '::1'].includes(host);
+  createServer({ databasePath: process.env.FANPLAY_DATABASE, tls, publicOrigin, kboLookup }).listen(port, host, () => {
     const address = host.includes(':') ? `[${host}]` : host;
     console.log(`FANPLAY: ${tls ? 'https' : 'http'}://${address}:${port}`);
   });

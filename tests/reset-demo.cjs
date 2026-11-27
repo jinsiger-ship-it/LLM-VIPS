@@ -12,6 +12,8 @@ async function verify(files){
  try{
   await db.exec('create role anon;create role authenticated;create table public.unrelated_fixture(value text);insert into public.unrelated_fixture values(\'keep\');');
   for(const file of files)await db.exec(fs.readFileSync(path.join(root,'migrations',file),'utf8'));
+  const hasKbo=files.some(file=>file.endsWith('_kbo_game_lookup.sql'));
+  if(hasKbo)await db.query("insert into fanplay_private.kbo_games (game_date,source_id,stadium,home_team,away_team,home_code,away_code,home_score,away_score) values ('2026-05-02','demo-game','문학','가상 홈','가상 원정','SSG','LOTTE',5,7)");
   await db.query("select public.fanplay_demo_join('reset_fixture','LG')");
   const post=(await db.query("select public.fanplay_demo_ticket_write('reset_fixture',$1,'post',p_ticket:=$2) id",[
    'a'.repeat(64),JSON.stringify({id:'old',date:'2026-11-27',home:'가상 홈',away:'가상 원정'})
@@ -29,11 +31,17 @@ async function verify(files){
   await db.exec(reset);
   const active=(await db.query("select tablename from pg_tables where schemaname='fanplay_private' and tablename<>'demo_reset_history' order by tablename")).rows;
   for(const {tablename} of active){
+   if(tablename==='kbo_games')continue;
    assert.match(tablename,/^demo_[a-z_]+$/);
    assert.equal((await db.query('select count(*) as remaining from fanplay_private.'+tablename)).rows[0].remaining,0,tablename);
   }
   assert.equal((await db.query('select value from public.unrelated_fixture')).rows[0].value,'keep');
   await db.exec('set role anon');
+  if(hasKbo){
+   const { games }=(await db.query("select public.fanplay_kbo_games('2026-05-02','LOTTE','인천 SSG랜더스필드') as games")).rows[0];
+   assert.deepEqual(games.map(game=>[game.homeScore,game.awayScore]),[[5,7]]);
+   await assert.rejects(()=>db.query('select * from fanplay_private.kbo_games'),{code:'42501'});
+  }
   const status=(await db.query('select public.fanplay_demo_status() as status')).rows[0].status;
   assert.deepEqual(status,{ready:true,version:1,recordReset:'fanplay-demo-20261127'});
   await assert.rejects(()=>db.query('select * from fanplay_private.demo_reset_history'),{code:'42501'});
