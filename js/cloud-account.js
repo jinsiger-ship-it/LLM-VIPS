@@ -55,12 +55,13 @@
   try{localStorage.setItem(activeKey,result.username);localStorage.setItem(previousKey,result.username);}catch{}
   return result;
  };
- FP.cloudRpc = async (name,body={}) => {
+ FP.cloudRpc = async (name,body={},signal) => {
+  const timeout=AbortSignal.timeout(15000);
   let response;
   try {
    response=await fetch(config.url+'/rest/v1/rpc/'+name,{
     method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},
-    body:JSON.stringify(body),signal:AbortSignal.timeout(15000),credentials:'omit'
+    body:JSON.stringify(body),signal:signal?AbortSignal.any([signal,timeout]):timeout,credentials:'omit'
    });
   }catch{throw new Error('온라인 저장소에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.');}
   let result;

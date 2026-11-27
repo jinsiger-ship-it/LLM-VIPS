@@ -603,6 +603,9 @@ html {
 .login-error { color: #7a2c22; font-size: 13px; font-weight: 700; margin: 6px 0 12px; }
 .login-error:empty { margin: 0; }
 .login-switch { margin-top: 8px; }
+.kbo-lookup { min-width: 0; margin: 12px 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
+.kbo-lookup legend { font-weight: 700; padding-inline: 4px; }
+.kbo-lookup [hidden] { display: none; }
 .login-guest { display: flex; width: fit-content; margin: 12px auto 0; text-decoration: underline; }
 .login-teams {
   padding: 0;
