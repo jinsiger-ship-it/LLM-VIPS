@@ -1,6 +1,7 @@
 
 # Local browser verification outputs
 qa/
+node_modules/
 database/*.sqlite*
 .env
 .env.*

@@ -37,9 +37,9 @@
   ['one-club','한 팀의 별'],['journey','끝까지 달린 선수']
  ];
  FP.titles.push(...titles.map(([id,name])=>({id,name})));
- FP.careerComplete = c => [6,7].includes(c?.rules) ? c.retired : completePrevious(c);
+ FP.careerComplete = c => [6,7,8].includes(c?.rules) ? c.retired : completePrevious(c);
  FP.careerStyle = c => {
-  if(![6,7].includes(c.rules)) return c.style;
+  if(![6,7,8].includes(c.rules)) return c.style;
   if(!c.story.length) return '나의 스타일을 찾아가는 중';
   if(c.position==='타자' && c.speed>=65 && c.traits.speed>=2) return '주루로 기회를 만드는 타자';
   const gap=c.stats[0]-c.stats[1];
@@ -171,7 +171,7 @@
  function duel(c,ch) {
   const roll=careerRoll(c.seed,2000+c.step*17+c.segment,100);
   const ability=ch.approach==='power'?c.stats[0]:ch.approach==='craft'?(c.stats[0]+c.stats[1])/2:c.stats[1];
-  const support=c.rules===6?(pitch(c)?(c.abilities[4]+c.abilities[5]-80)/20:(ch.approach==='safe'?(c.abilities[3]-40)/15:0)):0;
+  const support=[6,8].includes(c.rules)?(pitch(c)?(c.abilities[4]+c.abilities[5]-80)/20:(ch.approach==='safe'?(c.abilities[3]-40)/15:0)):0;
   const chance=Math.min(84,Math.max(28,Math.round(30+support+ability*.44+c.stats[2]*.12+(ch.approach==='safe'?5:0))));
   const success=roll<chance;
   const p=pitch(c);
@@ -182,7 +182,8 @@
   return `${success?'승부 성공':'상대의 승리'} · ${broadcastResults[result].label}${ch.battle==='rival'?` · ${rivalName(c)}와의 기억이 남았어요.`:''}`;
  }
  function finishRecord(c) {
-  const rating=autoRating(c),r=seasonRecord(c.position,c.role,rating,c.rest);
+  const defense=c.rules===8&&!pitch(c)?Math.trunc((c.abilities[4]+c.abilities[5]-80)/12):0;
+  const rating=autoRating(c)+defense,r=seasonRecord(c.position,c.role,rating,c.rest);
   if(!pitch(c)) {
    r.hits=Math.round(r.atBats*(.175+c.stats[1]/660));
    r.homeRuns=Math.min(r.hits,Math.floor(r.atBats*Math.max(0,c.stats[0]-32)/650));
@@ -208,7 +209,7 @@
    Object.assign(c.flags,ch.flags||{});
    if(ch.club && ch.club!==c.club) {c.transfers++;c.club=ch.club;}
    if(ch.role) c.role=ch.role;
-   if(ch.test) c.role=autoRating(c)+(c.rules===6&&!pitch(c)?(c.abilities[4]+c.abilities[5]-80)/20:0)>=54 && c.stats[2]>=42 ? starting(c) : c.role;
+   if(ch.test) c.role=autoRating(c)+([6,8].includes(c.rules)&&!pitch(c)?(c.abilities[4]+c.abilities[5]-80)/20:0)>=54 && c.stats[2]>=42 ? starting(c) : c.role;
    if(ch.rest) c.rest=true;
    if(ch.farewell) {c.farewell=ch.farewell;c.extended=true;}
    if(ch.retire) c.retired=true;
@@ -232,9 +233,9 @@
  }
  FP.restoreStoryCareer = saved => {
   const d=FP.normalizeCareerDraft(saved);
-  if(!d || ![6,7].includes(saved.rules) || !['투수','타자'].includes(saved.position) || !Array.isArray(saved.moves) || saved.moves.length>64) return null;
+  if(!d || ![6,7,8].includes(saved.rules) || !['투수','타자'].includes(saved.position) || !Array.isArray(saved.moves) || saved.moves.length>64) return null;
   let profile=null;
-  if(saved.rules===6) {
+  if([6,8].includes(saved.rules)) {
    if(![0,1,2].includes(saved.candidateIndex)||!FP.normalizeCareerHand(saved.position,saved.hand))return null;
    profile=FP.careerAbilityCandidates(d.seed,saved.position)[saved.candidateIndex];
    if(!Array.isArray(saved.startingAbilities)||profile.stats.some((n,i)=>saved.startingAbilities[i]!==n)||saved.startingAbilities.length!==6)return null;
@@ -250,10 +251,21 @@
   }
   for(const move of c.moves) {
    const before=[...c.stats],speed=c.speed;
+   const decision=c.pending?.choices[move],kind=c.pending?.category;
    if(!resolve(c,move))return null;
    if(profile) {
     const delta=c.stats.map((n,i)=>n-before[i]);
     const growth=pitch(c)?[delta[0],delta[0],delta[1],delta[1],0,0]:[delta[1],delta[0],c.speed-speed,delta[1],0,0];
+    if(c.rules===8&&decision){
+     const traits=decision.tags||[];
+     if(pitch(c)){
+      growth[4]=(traits.includes('care')?2:0)+(kind==='훈련'&&delta[2]>0?1:0);
+      growth[5]=(traits.includes('courage')?2:0)+(traits.includes('precision')||decision.test?1:0);
+     }else{
+      growth[4]=(traits.includes('team')?2:0)+(decision.test||kind==='훈련'?1:0);
+      growth[5]=(traits.includes('craft')?2:0)+(traits.includes('precision')||decision.approach==='safe'?1:0);
+     }
+    }
     c.abilities=c.abilities.map((n,i)=>FP.number(n+growth[i],0,100));
    }
   }
@@ -262,13 +274,13 @@
  };
  FP.restoreCareer = raw => {
   const saved=raw?.rules===4&&!raw.startingAbilities?{...raw,rules:7}:raw;
-  return [6,7].includes(saved?.rules)?FP.restoreStoryCareer(saved):restorePrevious(saved);
+  return [6,7,8].includes(saved?.rules)?FP.restoreStoryCareer(saved):restorePrevious(saved);
  };
  FP.signStoryPlayer = (id,name,position,hand,candidateIndex) => {
   if(FP.data.career || FP.data.careerDraft?.id!==id) return false;
   const profile=FP.careerAbilityCandidates(FP.data.careerDraft.seed,position)[candidateIndex];
   if(!profile)return false;
-  const c=FP.restoreStoryCareer({...FP.data.careerDraft,rules:6,name,position,hand,candidateIndex,startingAbilities:profile.stats,moves:[]});
+  const c=FP.restoreStoryCareer({...FP.data.careerDraft,rules:8,name,position,hand,candidateIndex,startingAbilities:profile.stats,moves:[]});
   return c?FP.transact(d=>{d.career=c;d.careerDraft=null;}):false;
  };
  FP.newStoryWithBackup = () => {
@@ -283,11 +295,23 @@
   return FP.transact(d=>{
    const index=d.savedCareers.findIndex(x=>x.id===id),saved=d.savedCareers.splice(index,1)[0];
    if(d.career)d.savedCareers.push({id:d.career.id||Date.now().toString(36)+'-saved',career:d.career});
+   if(d.careerDraft&&!d.savedDrafts.some(x=>x.id===d.careerDraft.id))d.savedDrafts.push(d.careerDraft);
    d.career=saved.career;d.careerDraft=null;
   });
  };
+ FP.resumeSavedDraft = id => {
+  if(!FP.data.savedDrafts.some(candidate=>candidate.id===id))return false;
+  return FP.transact(d=>{
+   const index=d.savedDrafts.findIndex(candidate=>candidate.id===id);
+   if(index<0)throw new Error('conflict');
+   const selected=d.savedDrafts.splice(index,1)[0];
+   if(d.career)d.savedCareers.push({id:d.career.id||selected.id+'-saved',career:d.career});
+   if(d.careerDraft)d.savedDrafts.push(d.careerDraft);
+   d.career=null;d.careerDraft=selected;
+  });
+ };
  FP.storyRewardIds = c => {
-  if(![6,7].includes(c?.rules)) return [];
+  if(![6,7,8].includes(c?.rules)) return [];
   const ids=[],major=c.log.filter(e=>e.role!=='farm').length;
   const total=k=>c.log.reduce((sum,e)=>sum+(e.record[k]||0),0);
   const wins=c.duels.filter(x=>x.rival&&x.success).length;
@@ -325,7 +349,7 @@
  };
  FP.advanceAutoCareer = (id,version,move,skip=false) => {
   const current=FP.data.career;
-  if(![6,7].includes(current?.rules)) return advancePrevious(id,version,move,skip);
+  if(![6,7,8].includes(current?.rules)) return advancePrevious(id,version,move,skip);
   if(current.id!==id || current.moves.length!==version) return false;
   let next=FP.restoreStoryCareer({...current,moves:[...current.moves,move]});
   if(!next) return false;
@@ -334,7 +358,7 @@
  };
  FP.selectCareerTitle = (id,titleId) => {
   const c=[FP.data.career,...FP.data.careerHistory].find(x=>x?.id===id);
-  if(![6,7].includes(c?.rules) || !c.retired || !FP.careerTitleOptions(c).some(x=>x.id===titleId)) return false;
+  if(![6,7,8].includes(c?.rules) || !c.retired || !FP.careerTitleOptions(c).some(x=>x.id===titleId)) return false;
   return FP.transact(d=>{
    const target=[d.career,...d.careerHistory].find(x=>x?.id===id);
    target.selectedTitleId=titleId;
@@ -342,10 +366,10 @@
    d.profile.selectedTitleId=titleId;
   });
  };
- FP.careerRecord = (c,entries=c.log) => recordPrevious(c,entries)+([6,7].includes(c.rules)&&!pitch(c)?` · ${entries.reduce((n,e)=>n+(e.record.steals||0),0)}도루`:'');
- FP.careerConclusion = c => [6,7].includes(c.rules)?(FP.titles.find(t=>t.id===c.selectedTitleId)?.name||'나의 야구 인생'):conclusionPrevious(c);
+ FP.careerRecord = (c,entries=c.log) => recordPrevious(c,entries)+([6,7,8].includes(c.rules)&&!pitch(c)?` · ${entries.reduce((n,e)=>n+(e.record.steals||0),0)}도루`:'');
+ FP.careerConclusion = c => [6,7,8].includes(c.rules)?(FP.titles.find(t=>t.id===c.selectedTitleId)?.name||'나의 야구 인생'):conclusionPrevious(c);
  FP.careerBroadcast = c => {
-  if(![6,7].includes(c.rules) || !c.encounter) return broadcastPrevious(c);
+  if(![6,7,8].includes(c.rules) || !c.encounter) return broadcastPrevious(c);
   const e=c.encounter,o=broadcastResults[e.result];
   const celebration=c.flags.celebration;
   const cheer=e.success?(celebration==='dance'?' 동료들과 짧은 리듬을 맞춥니다.':celebration==='heart'?' 관중석을 향해 작은 하트를 보냅니다.':' 차분하게 다음 플레이를 준비합니다.') : '';
