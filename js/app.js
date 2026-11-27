@@ -3,6 +3,7 @@ const app=document.querySelector('#app'), E=FP.esc;
 FP.toast = (message,decorate=false) => {const el=document.querySelector('#toast');el.textContent=message;if(decorate){const link=document.createElement('a');link.href='#create';link.textContent='바로 꾸미기 →';link.addEventListener('click',e=>{e.preventDefault();FP.openDecorationEditor();});el.appendChild(link);}el.classList.add('show');clearTimeout(FP.toastTimer);FP.toastTimer=setTimeout(()=>el.classList.remove('show'),4500);};
 FP.data=FP.guestData=FP.defaults();
 let draft=null,draftExpected,draftPhotoMissing=false,filter='전체',formStage=1,photoBusy=false;
+let savingTicket = null;
 let guestTicketDraft=null;
 let loginId='', loginReturn='profile', pendingShare=null, shareOptions=null;
 const demoAuthRoutes=['login','register','login-team'];
@@ -20,6 +21,14 @@ let guestMatches=[],matchResults=guestMatches,matchOwner=null;
 let matchImportReport=null;
 let appliedMatch = null;
 const kboLookupState = new WeakMap();
+const matchSummary = match => `${match.home} ${match.homeScore}–${match.awayScore} ${match.away} · ${match.stadium}`;
+function matchChoices(matches, source, selected='') {
+  return matches.map((match,index) => `<label class="ticket-game-choice">
+    <input type="radio" name="${source}-candidate" data-${source}-match value="${E(match.id)}" ${match.id===selected?'checked':''}>
+    <span><small>${E(match.time || (match.gameNo||index+1) + '차전')} · ${E(match.stadium)}</small>
+    <strong>홈 ${E(match.home)} ${match.homeScore}–${match.awayScore} 원정 ${E(match.away)}</strong></span>
+  </label>`).join('');
+}
 
 function kboLookupPanel() {
   if (!document.body?.hasAttribute('data-kbo-lookup') && !FP.cloudMode) return '';
@@ -29,8 +38,8 @@ function kboLookupPanel() {
       ${FP.teams.slice(1).map(([id, name]) => `<option value="${codes[id] ?? id}">${E(name)}</option>`).join('')}
     </select></label><label>검색할 구장<input data-kbo-stadium maxlength="80" placeholder="예: 문학, 잠실"></label></div>
     <button type="button" class="btn secondary" data-kbo-find>경기 찾기</button>
-    <p class="muted" data-kbo-status role="status">날짜와 구단 또는 구장을 선택해 주세요.</p>
-    <label data-kbo-choices hidden>경기 선택<select data-kbo-match></select></label>
+    <p class="ticket-feedback" data-kbo-status role="status"></p>
+    <div data-kbo-choices role="group" aria-label="경기 선택" hidden></div>
   </fieldset>`;
 }
 
@@ -38,6 +47,9 @@ function useKboMatch(form, match) {
   form.elements.stadium.value = match.stadium;
   applyMatch(form, match);
   refreshMatchPicker(form);
+  const status = form.querySelector('[data-kbo-status]');
+  status.dataset.state = 'applied';
+  status.textContent = '✓ 적용됨 · '+matchSummary(match);
 }
 
 async function searchKboGames(form) {
@@ -55,6 +67,7 @@ async function searchKboGames(form) {
   const state = { key, controller: new AbortController(), matches: [], loading: false };
   kboLookupState.set(form, state);
   choices.hidden = true;
+  status.dataset.state = '';
   if (!FP.validDate(params.get('date')) || (!team.value && !stadium.value.trim())) {
     status.textContent = '날짜와 구단 또는 구장을 선택해 주세요.';
     return;
@@ -84,15 +97,16 @@ async function searchKboGames(form) {
     if (!rows.length) { status.textContent = '일치하는 종료 경기가 없어요. 직접 입력할 수 있어요.'; return; }
     if (rows.length === 1 && fields.every((field,index) => form.elements[field].value === initial[index])) {
       useKboMatch(form, rows[0]);
-      status.textContent = '구장, 팀, 최종 점수를 채웠어요.';
       return;
     }
-    choices.querySelector('select').replaceChildren(new Option('경기를 골라 주세요', ''), ...rows.map((match,index) =>
-      new Option(`${match.time || (index + 1) + '차전'} · ${match.home} ${match.homeScore}–${match.awayScore} ${match.away} · ${match.stadium}`, match.id)));
+    choices.innerHTML = matchChoices(rows,'kbo');
     choices.hidden = false;
     status.textContent = `경기 ${rows.length}건을 찾았어요. 적용할 경기를 골라 주세요.`;
   } catch {
-    if (isCurrent()) status.textContent = '경기를 불러오지 못했어요. 다시 검색하거나 직접 입력해 주세요.';
+    if (isCurrent()) {
+      status.dataset.state = 'error';
+      status.textContent = '경기를 불러오지 못했어요. 다시 검색하거나 직접 입력해 주세요.';
+    }
   } finally {
     state.loading = false;
   }
@@ -102,12 +116,18 @@ app.addEventListener('click', event => {
   const form = event.target.closest('[data-kbo-find]')?.closest('#ticket-form');
   if (form) void searchKboGames(form);
 });
+app.addEventListener('keydown', event => {
+  if (event.key !== 'Enter' || event.isComposing || !event.target.matches('[data-kbo-stadium]')) return;
+  event.preventDefault();
+  void searchKboGames(event.target.closest('#ticket-form'));
+});
 
 function resultPicker() {
   const stadiums = [...new Set(matchResults.filter(match => match.date === draft.date).map(match => match.stadium))]
     .sort((first, second) => first.localeCompare(second, 'ko'));
   const matches = FP.matchesAt(matchResults, draft.date, draft.stadium.trim());
   const selectedMatch = appliedMatch?.draft === draft ? appliedMatch.match.id : '';
+  const applied = matches.find(match => match === appliedMatch?.match && match.id === selectedMatch);
   const status = !matchResults.length ? (FP.cloudMode || document.body?.hasAttribute('data-kbo-lookup') ? ''
     : '경기 결과 파일을 불러오면 날짜별 경기 자동 입력을 사용할 수 있어요.')
     : !stadiums.length ? '이 날짜에 등록된 종료 경기가 없어요. 직접 입력할 수 있어요.'
@@ -118,10 +138,8 @@ function resultPicker() {
       <select data-result-venue><option value="">구장 선택</option>
       ${stadiums.map(stadium => `<option value="${E(stadium)}" ${stadium === draft.stadium ? 'selected' : ''}>${E(stadium)}</option>`).join('')}
       </select></label>` : ''}
-    ${matches.length > 1 ? `<label>경기 선택
-      <select data-result-match><option value="">경기 시간 선택</option>
-      ${matches.map((match, index) => `<option value="${E(match.id)}" ${match.id === selectedMatch ? 'selected' : ''}>${E(match.time || (match.gameNo||index + 1) + '차전')} · ${E(match.away)} vs ${E(match.home)} · ${match.awayScore}:${match.homeScore}</option>`).join('')}
-      </select></label>` : ''}`;
+    ${matches.length > 1 ? `<div class="ticket-result-choices" role="group" aria-label="경기 선택">${matchChoices(matches,'result',selectedMatch)}</div>` : ''}
+    ${applied ? `<p class="ticket-feedback" role="status" data-state="applied">✓ 적용됨 · ${E(matchSummary(applied))}</p>` : ''}`;
 }
 
 function clearPreviousResult(form) {
@@ -156,10 +174,7 @@ app.addEventListener('change', async event => {
   }
   if (target.matches('[data-kbo-match]')) {
     const match = kboLookupState.get(form)?.matches.find(row => row.id === target.value);
-    if (match) {
-      useKboMatch(form, match);
-      form.querySelector('[data-kbo-status]').textContent = '구장, 팀, 최종 점수를 채웠어요.';
-    }
+    if (match) useKboMatch(form, match);
     return;
   }
   if (target.matches('[data-result-file]')) {
@@ -192,6 +207,7 @@ app.addEventListener('change', async event => {
     if (match) applyMatch(form, match);
     else clearPreviousResult(form);
     refreshMatchPicker(form);
+    form.querySelector('[data-result-match]:checked')?.focus({preventScroll:true});
     return;
   }
   if (!target.matches('[data-result-venue], [name="stadium"], [name="date"]')) return;
@@ -280,11 +296,56 @@ function clearTicketDraft(){
  else guestTicketDraft=null;
  draft=null;draftExpected=undefined;draftPhotoMissing=false;formStage=1;
 }
-function ticketPreview(){return `<div class="preview"><h2>티켓 미리보기</h2><div id="ticket-preview">${FP.ticket({...draft,home:draft.home||'홈 팀',away:draft.away||'원정 팀'})}</div></div>`;}
+function ticketPreview(showTitle=true){return `<div class="preview">${showTitle?'<h3>티켓 미리보기</h3>':''}<div id="ticket-preview">${FP.ticket({...draft,home:draft.home||'홈 팀',away:draft.away||'원정 팀'})}</div></div>`;}
+function moveTicketStage(stage) {
+ formStage=stage;rememberTicketDraft();render();
+ app.querySelector('#ticket-step-title')?.focus();
+ app.querySelector('#ticket-step-title')?.scrollIntoView({block:'start'});
+}
 function editor(){
  if(!draft)loadTicketDraft();
  if(!draft){draft={...FP.copy(FP.sample),id:uid(),date:new Date().toLocaleDateString('sv-SE'),stadium:'',home:'',away:'',hs:'',as:'',note:'',tag:'',stickerIds:[]};formStage=1;draftExpected=undefined;draftPhotoMissing=false;}
-return `${heading('MAKE A MEMORY','나의 티켓 만들기','경기 기록을 입력하고, 나만의 디자인으로 완성하세요.')}<div class="steps"><span class="${formStage===1?'active':''}">01 경기 기록</span><span class="${formStage===2?'active':''}">02 꾸미기</span><span class="${formStage===3?'active':''}">03 완성 미리보기</span></div><div class="editor-grid" data-stage="${formStage}"><form id="ticket-form" class="panel">${formStage===1?`<h2>어떤 경기였나요?</h2><div class="fields">${field('경기 날짜','date',draft.date,'date','required')}${field('야구장 / 시청 장소','stadium',draft.stadium,'text','maxlength="80" required')}</div>${kboLookupPanel()}<div data-result-picker>${resultPicker()}</div><details><summary>경기 결과 파일 불러오기</summary><label>경기 결과 파일 <input type="file" data-result-file accept=".json,application/json"></label></details><div class="fields">${field('홈 팀','home',draft.home,'text','maxlength="40" required')}${field('원정 팀','away',draft.away,'text','maxlength="40" required')}${field('홈 점수','hs',draft.hs,'number','min="0" max="99" required')}${field('원정 점수','as',draft.as,'number','min="0" max="99" required')}</div><label>관람 방식<select name="mode"><option ${draft.mode==='직관'?'selected':''}>직관</option><option ${draft.mode==='중계'?'selected':''}>중계</option></select></label>${field('태그','tag',draft.tag,'text','maxlength="30" placeholder="예: 첫 직관"')}<label>한 줄 감상<textarea name="note" maxlength="180" placeholder="이날의 기분을 남겨주세요">${E(draft.note)}</textarea></label><button class="btn" type="submit">꾸미기로 →</button>`:formStage===2?`<h2>나만의 한 장으로</h2><label>티켓 스타일<select name="theme">${[['classic','클래식'],['scoreboard','전광판'],['photo','포토']].map(([id,name])=>`<option value="${id}" ${draft.theme===id?'selected':''}>${name}</option>`).join('')}</select></label><label>컬러<select name="color">${[['forest','포레스트'],['rose','로즈'],['blue','블루'],['sand','샌드']].map(([id,name])=>`<option value="${id}" ${draft.color===id?'selected':''}>${name}</option>`).join('')}</select></label><label>경기 사진 (선택 · JPG/PNG/WebP · 최대 12MB)<input id="photo" type="file" accept="image/jpeg,image/png,image/webp"></label><p class="muted" id="photo-status">긴 변 900px로 줄여 보관합니다.</p>${button('사진 제거','remove-photo','','secondary')}${ticketPreview()}${decorationPicker()}<div class="actions">${draft.mode==='커리어'?'<a class="btn secondary" href="#collection">← 수집함</a>':button('← 경기 기록','stage','1','secondary')}<button class="btn" type="submit" ${photoBusy?'disabled':''}>완성 미리보기 →</button></div>`:`<h2>이 순간을 간직할까요?</h2><p>${FP.account.username?'티켓을 계정에 보관해요.':'티켓은 이번 방문 중에 수집함에서 볼 수 있어요.'}</p><p class="muted">사진이 없으면 기본 다이아몬드 그래픽이 표시됩니다. 실제 입장권으로 사용할 수 없습니다.</p><div class="actions">${button('← 꾸미기','stage','2','secondary')}<button class="btn" type="submit">수집함에 저장 ↗</button></div>`}</form>${formStage===2?'':ticketPreview()}</div>`;}
+ const steps=['경기 기록','꾸미기','완성 미리보기'];
+ const title=['어떤 경기였나요?','나만의 한 장으로','완성 티켓'][formStage-1];
+ const back=draft.mode==='커리어'?'<a class="btn secondary" href="#collection">수집함으로</a>':button('경기 기록 수정','stage','1','secondary');
+ const primary=text=>`<button class="btn" type="submit" ${photoBusy||savingTicket===draft?'disabled':''}>${text}</button>`;
+ const fileImport='<details class="ticket-disclosure"><summary>경기 결과 파일 불러오기</summary><label>경기 결과 파일<input type="file" data-result-file accept=".json,application/json"></label></details>';
+ const record=()=>`<section class="ticket-step-section ticket-lookup">
+   ${field('경기 날짜','date',draft.date,'date','required')}${kboLookupPanel()}<div data-result-picker>${resultPicker()}</div>
+  </section><section class="ticket-step-section ticket-fields" aria-label="경기 정보">
+   ${field('야구장 / 시청 장소','stadium',draft.stadium,'text','maxlength="80" required')}
+   <div class="ticket-team">${field('홈 팀','home',draft.home,'text','maxlength="40" required')}${field('홈 점수','hs',draft.hs,'number','min="0" max="99" inputmode="numeric" required')}</div>
+   <div class="ticket-team">${field('원정 팀','away',draft.away,'text','maxlength="40" required')}${field('원정 점수','as',draft.as,'number','min="0" max="99" inputmode="numeric" required')}</div>
+   <label>관람 방식<select name="mode"><option ${draft.mode==='직관'?'selected':''}>직관</option><option ${draft.mode==='중계'?'selected':''}>중계</option></select></label>
+  </section><div class="ticket-step-section ticket-extras">
+   ${fileImport}<details class="ticket-disclosure" ${draft.note||draft.tag?'open':''}><summary>태그와 한 줄 감상</summary>
+   ${field('태그','tag',draft.tag,'text','maxlength="30" placeholder="예: 첫 직관"')}<label>한 줄 감상<textarea name="note" maxlength="180">${E(draft.note)}</textarea></label></details>
+   <details class="ticket-disclosure ticket-preview-fold"><summary>입력한 티켓 미리보기</summary>${ticketPreview(false)}</details>
+  </div><div class="ticket-step-actions"><p data-ticket-record-status class="ticket-feedback" role="status"></p>${primary('꾸미기로 →')}</div>`;
+ const styles=[['classic','클래식'],['scoreboard','전광판'],['photo','포토']];
+ const colors=[['forest','포레스트'],['rose','로즈'],['blue','블루'],['sand','샌드']];
+ const selectOptions=(options,key)=>options.map(([id,name])=>`<option value="${id}" ${draft[key]===id?'selected':''}>${name}</option>`).join('');
+ const decorate=()=>`${ticketPreview()}<div class="ticket-step-section">${decorationPicker()}</div>
+   <details class="ticket-disclosure ticket-step-section" ${draft.photo||draftPhotoMissing?'open':''}><summary>티켓 스타일·색상·사진</summary>
+     <div class="fields"><label>티켓 스타일<select name="theme">${selectOptions(styles,'theme')}</select></label>
+     <label>색상<select name="color">${selectOptions(colors,'color')}</select></label></div>
+     <label>경기 사진<input id="photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="photo-status"></label>
+     <p class="muted" id="photo-status" role="status">JPG·PNG·WebP, 최대 12MB</p>
+     ${draft.photo?button('사진 제거','remove-photo','','secondary'):''}
+   </details><div class="ticket-step-actions">${primary('완성 미리보기 →')}${back}</div>`;
+ const complete=()=>`${ticketPreview(false)}<div class="ticket-step-actions">
+   ${FP.account.username?'':'<p class="ticket-feedback">비회원 티켓은 이번 방문에만 보관돼요.</p>'}
+   <p class="ticket-save-status" data-ticket-save-status role="status"></p>
+   ${primary('수집함에 저장 ↗')}${button('꾸미기 수정','stage','2','secondary')}
+   ${FP.account.username?`<div data-ticket-retry ${FP.accountSaveState==='error'?'':'hidden'}>${button('최신 티켓 확인 후 다시 저장','ticket-rebase','','secondary')}</div>`:''}
+  </div>`;
+ const content=formStage===1?record():formStage===2?decorate():complete();
+ return `<section class="ticket-editor"><h1>나의 티켓 만들기</h1>
+   <div class="steps" aria-label="티켓 만들기 단계">${steps.map((label,index)=>`<span ${formStage===index+1?'class="active" aria-current="step"':''}>${index+1}. ${label}</span>`).join('')}</div>
+   <div class="editor-grid" data-stage="${formStage}"><form id="ticket-form" class="panel" aria-labelledby="ticket-step-title">
+   <h2 id="ticket-step-title" tabindex="-1">${title}</h2>${content}</form></div></section>`;
+}
+
 function decorationPicker() {
  const types=[['frame','프레임'],['background','배경'],['sticker','스티커'],['badge','배지']];
  const fields={frame:'frameId',background:'backgroundId',sticker:'stickerIds',badge:'badgeId'};
@@ -752,7 +813,7 @@ function render() {
   const route = location.hash.slice(1) || 'home';
   const view = Object.hasOwn(screens, route) ? route : 'home';
   const activeTab = view === 'create' ? 'home' : view==='ranking'?'game':['collection','profile-edit','account','records'].includes(view) ? 'profile' : view;
-  const loginPage=FP.cloudMode&&demoAuthRoutes.includes(view)&&!FP.account.username;
+  const loginPage=Boolean(FP.cloudMode)&&demoAuthRoutes.includes(view)&&!FP.account.username;
   document.querySelector('.bottomnav')?.toggleAttribute?.('hidden',loginPage);
   const accountLink=document.querySelector('.header-account');
   if(accountLink?.toggleAttribute){
@@ -768,11 +829,9 @@ function render() {
   const restore=FP.account.restorePending?`<section class="panel"><h1>온라인 기록 복원</h1>
    <p role="status">${E(FP.account.checking?'이전에 접속한 온라인 기록을 확인하고 있어요.':FP.cloudError||'온라인 기록을 복원하지 못했어요.')}</p>
    ${FP.account.checking?'':`<div class="actions">${button('다시 연결','cloud-retry')}${button('비회원으로 계속','cloud-guest','','secondary')}</div>`}</section>`:'';
-  const guestNotice=!FP.account.username&&(loginPage||['create','collection','game','profile'].includes(view))?
+  const guestNotice=!FP.account.username&&(loginPage||['collection','game','profile'].includes(view))?
     '<p class="notice">비회원 기록은 이번 방문에만 유지돼요. 새로고침하거나 탭을 닫으면 사라져요.</p>':'';
-  const draftNotice=view==='create'?`<div class="actions"><button type="button" class="btn quiet" data-action="discard-ticket-draft">작성 중인 티켓 삭제</button>
-   ${FP.account.username&&FP.accountSaveState==='error'?button('최신 티켓 확인 후 다시 저장','ticket-rebase','','secondary'):''}
-   </div>`:'';
+  const draftNotice=view==='create'?'<div class="ticket-draft-action"><button type="button" class="btn quiet" data-action="discard-ticket-draft">작성 중인 티켓 삭제</button></div>':'';
   const rankLink=view==='game'&&FP.communityMode?'<a class="text-link" href="#ranking">투수·타자 랭킹 →</a>':'';
   app.innerHTML = restore || guestNotice+rankLink+screens[view]()+draftNotice+(view==='create'&&draftPhotoMissing?'<p role="status">텍스트와 꾸미기를 복구했어요. 사진은 다시 선택해 주세요.</p>':'');
   const nextClip = app.querySelector?.('.broadcast-clip');
@@ -918,21 +977,36 @@ if(FP.communityMode && form.classList.contains('comment-form')){
  return;
 }
 if(form.id==='ticket-form'){
+ if(savingTicket===draft)return;
  syncDraft(form);
  if(photoBusy)return;
  if(formStage===1&&(!FP.validDate(draft.date)||!draft.home.trim()||!draft.away.trim()||!draft.stadium.trim()||!FP.validScore(draft.hs)||!FP.validScore(draft.as))){
-  FP.toast('날짜, 구장, 두 팀과 점수를 확인해 주세요.');
+  form.querySelector('[data-ticket-record-status]').textContent='날짜, 구장, 두 팀과 점수를 확인해 주세요.';
   return;
  }
  if(formStage<3){
-  formStage++;rememberTicketDraft();render();
+  moveTicketStage(formStage+1);
  }else{
   const editing=draft, owner=FP.account.username;
-  if(await FP.saveTicket(editing,draftExpected)){
-   if(draft===editing&&owner===FP.account.username)clearTicketDraft();
+  const status=form.querySelector('[data-ticket-save-status]');
+  const submit=form.querySelector('[type="submit"]');
+  const back=form.querySelector('[data-action="stage"]');
+  savingTicket=editing;
+  submit.disabled=true;back.disabled=true;
+  status.dataset.state='saving';status.textContent='티켓을 저장하고 있어요…';
+  let saved=false;
+  try{saved=await FP.saveTicket(editing,draftExpected);}catch{}
+  finally{if(savingTicket===editing)savingTicket=null;submit.disabled=false;back.disabled=false;}
+  if(saved){
+   if(draft!==editing||owner!==FP.account.username)return;
+   clearTicketDraft();
    if(location.hash==='#create')location.hash='collection';
    FP.toast('티켓을 수집함에 저장했습니다.');
-  }else if(location.hash==='#create')render();
+  }else if(form.isConnected){
+   status.dataset.state='error';status.textContent='저장하지 못했어요. 작성 내용은 남아 있어요. 다시 저장해 주세요.';
+   const retry=form.querySelector('[data-ticket-retry]');
+   if(retry)retry.hidden=FP.accountSaveState!=='error';
+  }
  }
  return;
 }
@@ -955,9 +1029,9 @@ if(form.id==='career-form'){
 }
 });
 app.addEventListener('click',async e=>{const b=e.target.closest('[data-action]');if(!b||FP.account.checking||FP.account.busy)return;const {action:a,value:v}=b.dataset;
-if(a==='stage'){syncDraft(document.querySelector('#ticket-form'));formStage=Number(v);rememberTicketDraft();render();}
+if(a==='stage'){if(savingTicket===draft)return;syncDraft(document.querySelector('#ticket-form'));moveTicketStage(Number(v));}
 if(a==='remove-photo'){draft.photo='';draftPhotoMissing=false;rememberTicketDraft();render();}
-if(a==='discard-ticket-draft'&&confirm('작성 중인 티켓을 지울까요? 수집함에 저장한 티켓은 남아요.')){clearTicketDraft();render();return;}
+if(a==='discard-ticket-draft'&&savingTicket!==draft&&confirm('작성 중인 티켓을 지울까요? 수집함에 저장한 티켓은 남아요.')){clearTicketDraft();render();return;}
 if(a==='ticket-rebase'&&draft&&FP.account.username){
  try{
   const result=FP.cloudMode?await FP.accountRequest('login','POST',{username:FP.account.username}):await FP.accountRequest('session');

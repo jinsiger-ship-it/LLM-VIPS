@@ -603,9 +603,56 @@ html {
 .login-error { color: #7a2c22; font-size: 13px; font-weight: 700; margin: 6px 0 12px; }
 .login-error:empty { margin: 0; }
 .login-switch { margin-top: 8px; }
-.kbo-lookup { min-width: 0; margin: 12px 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
-.kbo-lookup legend { font-weight: 700; padding-inline: 4px; }
-.kbo-lookup [hidden] { display: none; }
+.ticket-editor { max-width: 640px; margin-inline: auto; }
+.ticket-editor h1 { margin-block: 0 16px; }
+.ticket-editor .steps { margin: 0 0 16px; }
+.ticket-editor .steps span { line-height: 1.4; }
+.ticket-editor .editor-grid { grid-template-columns: minmax(0, 1fr); }
+.ticket-editor #ticket-form { min-width: 0; padding: clamp(14px, 4vw, 24px); }
+.ticket-editor #ticket-step-title { font-size: 20px; margin: 0 0 16px; }
+.ticket-editor #ticket-step-title:focus { outline: none; }
+.ticket-step-section + .ticket-step-section { margin-top: 24px; }
+.ticket-editor .ticket-fields { display: grid; gap: 12px; }
+.ticket-editor .ticket-team { display: grid; grid-template-columns: minmax(0, 1fr) 5rem; gap: 12px; }
+.ticket-editor label { min-width: 0; margin: 0; }
+.ticket-editor label > :is(input, select, textarea) { margin-top: 6px; }
+.ticket-editor .ticket-lookup { display: grid; gap: 12px; }
+.ticket-editor .ticket-lookup [data-result-picker]:empty { display: none; }
+.ticket-editor [data-result-picker] > * + * { margin-top: 8px; }
+.ticket-editor .kbo-lookup { min-width: 0; margin: 0; padding: 10px 12px 12px; border: 0; border-radius: 12px; background: var(--soft); }
+.ticket-editor .kbo-lookup legend { padding-inline: 4px; font-size: 14px; font-weight: 800; }
+.ticket-editor .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.ticket-editor .kbo-lookup > .btn { margin-top: 12px; }
+.ticket-editor .ticket-feedback, .ticket-editor .ticket-save-status {
+  margin: 8px 0 0; color: #38524a; font-size: 13px; overflow-wrap: anywhere; word-break: keep-all;
+}
+.ticket-editor :is(.ticket-feedback, .ticket-save-status):empty { display: none; }
+.ticket-editor [data-state="error"], .ticket-editor [data-ticket-record-status] { color: #963e34; }
+.ticket-editor [data-state="applied"] { font-weight: 700; }
+.ticket-editor :is([data-kbo-choices], .ticket-result-choices) { display: grid; gap: 8px; margin-top: 12px; }
+.ticket-editor [hidden] { display: none !important; }
+.ticket-editor .ticket-game-choice {
+  display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 8px 10px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--surface);
+}
+.ticket-game-choice span { min-width: 0; overflow-wrap: anywhere; word-break: keep-all; }
+.ticket-game-choice small { display: block; color: #38524a; }
+.ticket-game-choice:has(:checked) { border-color: var(--accent); }
+.ticket-editor .ticket-disclosure { border-top: 1px solid var(--line); }
+.ticket-editor .ticket-disclosure > summary { min-height: 44px; padding-block: 10px; cursor: pointer; color: #38524a; font-weight: 700; }
+.ticket-editor .ticket-disclosure > label + label,
+.ticket-editor .ticket-disclosure > .fields + label { margin-top: 12px; }
+.ticket-editor .preview { position: static; margin: 0; padding: 0; background: none; }
+.ticket-editor [data-stage="2"] .preview { margin: 0 0 24px; padding: 0; }
+.ticket-editor .preview h3 { margin: 0 0 8px; font-size: 13px; }
+.ticket-editor .preview .ticket-content > small { overflow-wrap: anywhere; word-break: keep-all; }
+.ticket-editor [data-stage="2"] .preview :is(.diamond-art, .ticket-photo) { height: 92px; }
+.ticket-editor .decoration-picker { border: 0; margin: 0; padding: 0; }
+.ticket-editor .decoration-picker .section-title { margin-bottom: 8px; }
+.ticket-editor .decoration-picker .section-title h3 { margin: 0; }
+.ticket-editor .ticket-step-actions { display: grid; gap: 8px; margin-top: 24px; }
+.ticket-editor .ticket-step-actions .btn { width: 100%; }
+.ticket-draft-action { max-width: 640px; margin: 8px auto 0; }
 .login-guest { display: flex; width: fit-content; margin: 12px auto 0; text-decoration: underline; }
 .login-teams {
   padding: 0;

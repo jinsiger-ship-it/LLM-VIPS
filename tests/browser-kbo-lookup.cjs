@@ -9,7 +9,7 @@ async function verify() {
   const date = '2026-05-02';
   const publicSite = process.env.FANPLAY_KBO_TEST_URL;
   const cloud = !!publicSite || process.argv.includes('--cloud');
-  const live = !!publicSite || process.env.FANPLAY_KBO_LIVE_TEST === '1';
+  const live = !!publicSite || process.argv.includes('--live') || process.env.FANPLAY_KBO_LIVE_TEST === '1';
   let offline = false;
   const first = {
     gameKey: 'fixture-1', date, time: '14:00:00', stadium: '문학',
@@ -34,13 +34,13 @@ async function verify() {
     assert.equal((await fetch(local + '/api/kbo-games?date=2026-02-31&team=LOTTE', { headers })).status, 400);
     browser = await chromium.launch({ executablePath: process.env.BROWSER_EXECUTABLE });
     const page = await browser.newPage({ viewport: { width: 320, height: 780 } });
-    if (cloud && !live) {
+    if (cloud && !publicSite) {
       await page.route('http://fanplay.test/**', route => {
         const name = new URL(route.request().url()).pathname.slice(1) || 'index.html';
         if (!/^(index\.html|(?:js|css)\/[a-z-]+\.(?:js|css)|js\/vendor\/supabase\.js)$/.test(name)) return route.abort();
         return route.fulfill({ path: path.resolve(__dirname, '..', name) });
       });
-      await page.route('https://*.supabase.co/rest/v1/rpc/*', route => {
+      if (!live) await page.route('https://*.supabase.co/rest/v1/rpc/*', route => {
         const name = new URL(route.request().url()).pathname.split('/').pop();
         if (name === 'fanplay_demo_status') return route.fulfill({ json: { ready: true, version: 1 } });
         assert.equal(name, 'fanplay_kbo_games');
@@ -62,13 +62,13 @@ async function verify() {
     await pick('[name="date"]').fill(date);
     await pick('[data-kbo-team]').selectOption('LOTTE');
     if (live) {
-      await pick('[data-kbo-status]').filter({ hasText: '구장, 팀, 최종 점수를 채웠어요.' }).waitFor();
+      await pick('[data-kbo-status]').filter({ hasText: '적용됨' }).waitFor();
       assert.equal(await pick('[name="hs"]').inputValue(), '5');
       assert.equal(await pick('[name="as"]').inputValue(), '7');
     } else {
-      await pick('[data-kbo-match]').waitFor();
-      assert.equal(await pick('[data-kbo-match] option').count(), 3);
-      await pick('[data-kbo-match]').selectOption({ index: 2 });
+      await pick('[data-kbo-match]').first().waitFor();
+      assert.equal(await pick('[data-kbo-match]').count(), 2);
+      await pick('[data-kbo-match]').nth(1).check();
       assert.equal(await pick('[name="hs"]').inputValue(), '2');
       assert.equal(await pick('[name="as"]').inputValue(), '3');
     }
@@ -77,9 +77,9 @@ async function verify() {
     await pick('[data-kbo-stadium]').fill('인천 SSG랜더스필드');
     await pick('[data-kbo-find]').click();
     if (!live) {
-      await pick('[data-kbo-match]').waitFor();
-      assert.equal(await pick('[data-kbo-match] option').count(), 3);
-      await pick('[data-kbo-match]').selectOption({ index: 1 });
+      await pick('[data-kbo-match]').first().waitFor();
+      assert.equal(await pick('[data-kbo-match]').count(), 2);
+      await pick('[data-kbo-match]').first().check();
     }
     await page.waitForFunction(() => document.querySelector('[name="hs"]').value === '5');
     assert.equal(await pick('[name="home"]').inputValue(), 'SSG 랜더스');
